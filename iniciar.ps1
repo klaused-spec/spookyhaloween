@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $speechSdkBundle -PathType Leaf)) {
   throw 'Dependências do app não encontradas. Execute npm install e tente novamente.'
 }
 
-foreach ($line in Get-Content -LiteralPath $envFile) {
+foreach ($line in Get-Content -LiteralPath $envFile -Encoding UTF8) {
   if ([string]::IsNullOrWhiteSpace($line) -or $line -match '^\s*#') {
     continue
   }

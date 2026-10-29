@@ -4,7 +4,47 @@ const path = require("node:path");
 
 const publicDirectory = path.join(__dirname, "public");
 const port = Number(process.env.PORT || 3000);
-const MAX_REPLY_LENGTH = 100;
+const MAX_REPLY_LENGTH = Number(process.env.HALLOWEEN_MAX_REPLY_LENGTH || 100);
+if (!Number.isSafeInteger(MAX_REPLY_LENGTH) || MAX_REPLY_LENGTH < 20) {
+  throw new Error("HALLOWEEN_MAX_REPLY_LENGTH deve ser um número inteiro de pelo menos 20.");
+}
+const promptEnvironmentKeys = [
+  "HALLOWEEN_LUANA_CONTEXT",
+  "HALLOWEEN_CAIO_CONTEXT",
+  "HALLOWEEN_PEDRO_CONTEXT",
+  "HALLOWEEN_CONTEXT_ROLE",
+  "HALLOWEEN_CONTEXT_CHARACTERS",
+  "HALLOWEEN_CONTEXT_REPLY",
+  "HALLOWEEN_CONTEXT_UNCLEAR",
+  "HALLOWEEN_CONTEXT_STYLE",
+  "HALLOWEEN_CONTEXT_EXAMPLES",
+  "HALLOWEEN_CONTEXT_IDLE",
+  "HALLOWEEN_CONTEXT_NORMAL",
+  "HALLOWEEN_CONTEXT_FORMAT",
+  "HALLOWEEN_DISALLOWED_PHRASES",
+  "HALLOWEEN_IDLE_USER_PROMPT",
+  "HALLOWEEN_IDLE_QUESTIONS",
+  "HALLOWEEN_FALLBACK_AUTOCONHECIMENTO",
+  "HALLOWEEN_FALLBACK_DEMONIO_CASA",
+  "HALLOWEEN_FALLBACK_BRUXA_NOME",
+  "HALLOWEEN_FALLBACK_PIRATA",
+  "HALLOWEEN_FALLBACK_FILMES_TERROR",
+  "HALLOWEEN_FALLBACK_AMIGAS",
+  "HALLOWEEN_FALLBACK_NOME",
+  "HALLOWEEN_FALLBACK_TRANSCRICAO",
+  "HALLOWEEN_FALLBACK_GENERICO",
+];
+const promptConfig = Object.fromEntries(
+  promptEnvironmentKeys.map((key) => [key, process.env[key]?.trim() || ""]),
+);
+const idleQuestions = (promptConfig.HALLOWEEN_IDLE_QUESTIONS || "")
+  .split("|")
+  .map((question) => question.trim())
+  .filter(Boolean);
+const disallowedPhrases = (promptConfig.HALLOWEEN_DISALLOWED_PHRASES || "")
+  .split("|")
+  .map((phrase) => normalizeText(phrase))
+  .filter(Boolean);
 const characters = [
   {
     id: "luana",
@@ -12,7 +52,7 @@ const characters = [
     voice: "pt-BR-Luana:MAI-Voice-2.1-Flash",
     style: "whispering",
     pitch: "-13%",
-    personality: "fantasma que sussurra perguntas pessoais com curiosidade arrepiante",
+    personality: promptConfig.HALLOWEEN_LUANA_CONTEXT,
   },
   {
     id: "caio",
@@ -20,7 +60,7 @@ const characters = [
     voice: "pt-BR-Caio:MAI-Voice-2.1-Flash",
     style: "whispering",
     pitch: "-17%",
-    personality: "vampiro que sussurra com humor macabro e curiosidade insistente",
+    personality: promptConfig.HALLOWEEN_CAIO_CONTEXT,
   },
   {
     id: "pedro",
@@ -28,19 +68,10 @@ const characters = [
     voice: "pt-BR-AntonioNeural",
     style: "whispering",
     pitch: "-10%",
-    personality: "zelador sinistro, seco e persistente, que fala como se guardasse um segredo",
+    personality: promptConfig.HALLOWEEN_PEDRO_CONTEXT,
   },
 ];
 const charactersById = new Map(characters.map((character) => [character.id, character]));
-const idleQuestions = [
-  "Ei... qual é o seu nome? Hehehe...",
-  "Você veio pela festa... ou pelo susto?",
-  "Já provou asas de barata crocantes? Hehehe...",
-  "Ei... não vai me deixar falando sozinho, vai? Como se chama?",
-  "O que trouxe você até esta festa estranha?",
-  "Uuuuuh... de que veio fantasiado?",
-  "Tem coragem de ouvir minha risada? Hehehe...",
-];
 const stopWords = new Set([
   "a", "agora", "ai", "ainda", "algo", "as", "assim", "ate", "bem", "com",
   "como", "da", "das", "de", "depois", "do", "dos", "e", "ela", "ele", "em",
@@ -95,45 +126,52 @@ function escapeXml(text) {
   });
 }
 
-function getMeaningfulWords(text) {
-  const normalized = text
+function formatPrompt(template, values) {
+  return template.replace(/\{([A-Z_]+)\}/g, (placeholder, key) =>
+    Object.hasOwn(values, key) ? values[key] : placeholder,
+  );
+}
+
+function normalizeText(text) {
+  return text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+}
+
+function getMeaningfulWords(text) {
+  const normalized = normalizeText(text);
   return (normalized.match(/[\p{L}]+/gu) || [])
     .filter((word) => word.length > 2 && !stopWords.has(word));
 }
 
 function getGuestReplyFallback(text) {
-  const normalized = text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+  const normalized = normalizeText(text);
 
   if (normalized.includes("autoconhecimento")) {
-    return "Só estou tentando conversar. Qual frase te incomodou?";
+    return promptConfig.HALLOWEEN_FALLBACK_AUTOCONHECIMENTO;
   }
   if (/\b(demonio|diabo)\b/.test(normalized) && /\bcasa\b/.test(normalized)) {
-    return "Essa ideia parece assustadora. O que aconteceu em casa?";
+    return promptConfig.HALLOWEEN_FALLBACK_DEMONIO_CASA;
   }
 
   const nameMatch = normalized.match(/\b(?:meu nome e|me chamo)\s+([\p{L}]+)/u);
   if (nameMatch && /\bbruxa\b/i.test(normalized)) {
     const name = nameMatch[1].charAt(0).toLocaleUpperCase("pt-BR") + nameMatch[1].slice(1);
-    return `Prazer, ${name}! O que mais gosta na fantasia?`;
+    return formatPrompt(promptConfig.HALLOWEEN_FALLBACK_BRUXA_NOME, { NAME: name });
   }
   if (/\bfantasia\b/.test(normalized) && /\bpirata\b/.test(normalized)) {
-    return "Fantasia de pirata? Qual parte você mais gosta?";
+    return promptConfig.HALLOWEEN_FALLBACK_PIRATA;
   }
   if (/\bfilmes?\b/.test(normalized) && /\bterror\b/.test(normalized)) {
-    return "Filmes de terror? Qual deles mais te assusta?";
+    return promptConfig.HALLOWEEN_FALLBACK_FILMES_TERROR;
   }
   if (/\bamigas?\b/.test(normalized)) {
-    return "Você veio com suas amigas? O que elas acharam da festa?";
+    return promptConfig.HALLOWEEN_FALLBACK_AMIGAS;
   }
   if (nameMatch) {
     const name = nameMatch[1].charAt(0).toLocaleUpperCase("pt-BR") + nameMatch[1].slice(1);
-    return `Prazer, ${name}! O que te trouxe à festa?`;
+    return formatPrompt(promptConfig.HALLOWEEN_FALLBACK_NOME, { NAME: name });
   }
 
   const words = normalized.match(/[\p{L}]+/gu) || [];
@@ -142,7 +180,7 @@ function getGuestReplyFallback(text) {
     contentWords.length <= 1 ||
     (words.length >= 7 && contentWords.length / words.length <= 0.2)
   ) {
-    return "Não entendi direito. Pode repetir de outro jeito?";
+    return promptConfig.HALLOWEEN_FALLBACK_TRANSCRICAO;
   }
 
   return null;
@@ -298,6 +336,17 @@ async function handleSpeechToken(response) {
 }
 
 async function handleChat(request, response) {
+  const missingPromptConfig = promptEnvironmentKeys.filter((key) => !promptConfig[key]);
+  if (missingPromptConfig.length > 0 || idleQuestions.length === 0) {
+    const missing = idleQuestions.length > 0
+      ? missingPromptConfig
+      : [...missingPromptConfig, "HALLOWEEN_IDLE_QUESTIONS"];
+    sendJson(response, 503, {
+      error: `Configure os prompts e contextos no .env: ${missing.join(", ")}.`,
+    });
+    return;
+  }
+
   const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
   const apiKey = process.env.AZURE_OPENAI_API_KEY;
   const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
@@ -370,20 +419,28 @@ async function handleChat(request, response) {
           {
             role: "system",
             content: [
-              "Você interpreta um personagem assustador de uma festa de Halloween e fala diretamente com os convidados. Responda em português brasileiro, com uma fala natural e curta, nunca acima de 100 caracteres.",
+              formatPrompt(promptConfig.HALLOWEEN_CONTEXT_ROLE, {
+                MAX_REPLY_LENGTH: String(MAX_REPLY_LENGTH),
+              }),
               ...characters.map(
                 (character) => `${character.name}: ${character.personality}.`,
               ),
-              `Nesta rodada, ${speaker.name} fala sozinho. Nunca interprete outro personagem nem crie diálogo entre os moradores. A última fala do convidado é o assunto principal: responda a ela, não recite uma frase pronta de personagem.`,
-              "Sua fala tem duas partes obrigatórias: uma reação curta que responda ao que a pessoa disse e uma única pergunta de continuação diretamente sobre o mesmo assunto. Se a pessoa fez uma pergunta, responda-a na reação. Não mude de assunto.",
-              "Se a transcrição estiver truncada ou sem sentido, não tente adivinhar nem invente medo ou segredo: a reação deve dizer que não entendeu e a pergunta deve pedir para repetir. Se a pessoa já disse o nome, lembre-se dele e não pergunte de novo. Se ela não quiser conversar, respeite.",
-              "Use linguagem cotidiana. Nunca use frases vagas ou filosóficas como 'quem teme o que não conhece?', 'conheço seu medo' e 'qual sua verdadeira face?'. Não faça monólogos, poesia ou narração. Não diga que vê a pessoa ou conhece seus segredos.",
-              "Exemplos obrigatórios do formato e do comportamento: para 'Você está usando essas frases para autoconhecimento?', responda reaction='Autoconhecimento? Só estou tentando conversar.' e question='Qual frase te incomodou?'. Para 'É pronto.', use reaction='Não entendi o que quis dizer com pronto.' e question='Pode explicar?'. Para 'O demônio está dentro da minha casa.', use reaction='Essa ideia parece assustadora.' e question='O que aconteceu em casa?'. Para 'Meu nome é Ana e estou fantasiada de bruxa.', use reaction='Prazer, Ana! Bruxa, que legal.' e question='Qual parte da fantasia você mais gosta?'.",
-              "O susto está no sussurro e na personalidade: use de vez em quando uma risada curta como 'Hehehe...', mas não em toda fala. Mantenha a brincadeira de Halloween, sem ameaças reais ou humilhação.",
+              formatPrompt(promptConfig.HALLOWEEN_CONTEXT_CHARACTERS, {
+                SPEAKER: speaker.name,
+              }),
+              promptConfig.HALLOWEEN_CONTEXT_REPLY,
+              promptConfig.HALLOWEEN_CONTEXT_UNCLEAR,
+              promptConfig.HALLOWEEN_CONTEXT_STYLE,
+              promptConfig.HALLOWEEN_CONTEXT_EXAMPLES,
               isIdlePrompt
-                ? `Ninguém respondeu há 15 segundos. Inicie conversa com uma pergunta direta e curta, sem narração: ${idleQuestion}`
-                : "Responda especificamente à última fala do convidado. Não use uma pergunta pronta de início de conversa se a pessoa já está conversando.",
-              `Retorne somente JSON válido no formato {"reaction":"resposta direta","question":"pergunta relacionada"}. ${speaker.name} diz uma reação e uma pergunta, juntas com até ${MAX_REPLY_LENGTH} caracteres.`,
+                ? formatPrompt(promptConfig.HALLOWEEN_CONTEXT_IDLE, {
+                    IDLE_QUESTION: idleQuestion,
+                  })
+                : promptConfig.HALLOWEEN_CONTEXT_NORMAL,
+              formatPrompt(promptConfig.HALLOWEEN_CONTEXT_FORMAT, {
+                SPEAKER: speaker.name,
+                MAX_REPLY_LENGTH: String(MAX_REPLY_LENGTH),
+              }),
             ].join(" "),
           },
           ...messages,
@@ -391,7 +448,7 @@ async function handleChat(request, response) {
             ? [
                 {
                   role: "user",
-                  content: "Fale diretamente com alguém da festa, em poucas palavras. Não narre nada.",
+                  content: promptConfig.HALLOWEEN_IDLE_USER_PROMPT,
                 },
               ]
             : []),
@@ -452,18 +509,16 @@ async function handleChat(request, response) {
     ? parsedAnswer.lines[0].text.trim()
     : "";
   const candidateReply = structuredReply || lineReply;
-  const normalizedReply = candidateReply
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+  const normalizedReply = normalizeText(candidateReply);
   const replyWords = new Set(getMeaningfulWords(candidateReply));
   const hasTopicOverlap = isIdlePrompt || getMeaningfulWords(lastMessage.content)
     .some((word) => replyWords.has(word));
   const questionMarks = candidateReply.match(/\?/g) || [];
   const hasNaturalFollowUp = candidateReply.trim().endsWith("?") &&
     questionMarks.length === 1;
-  const hasGenericCatchphrase =
-    /quem teme o que nao conhece|conheco seu medo|qual sua verdadeira face|medo revela quem voce e|quer que eu te ajude|quer que eu investigue|voar por aqui|presenca/.test(normalizedReply);
+  const hasGenericCatchphrase = disallowedPhrases.some((phrase) =>
+    normalizedReply.includes(phrase),
+  );
   const acceptedReply = candidateReply.length <= MAX_REPLY_LENGTH &&
     hasNaturalFollowUp &&
     hasTopicOverlap &&
@@ -472,7 +527,7 @@ async function handleChat(request, response) {
     ? acceptedReply ? candidateReply : idleQuestion
     : acceptedReply
       ? candidateReply
-      : getGuestReplyFallback(lastMessage.content) || "Não entendi bem isso. Pode me contar mais?";
+      : getGuestReplyFallback(lastMessage.content) || promptConfig.HALLOWEEN_FALLBACK_GENERICO;
   if (!acceptedReply) {
     console.warn("A resposta gerada não foi suficientemente relacionada; usei uma pergunta de continuação.");
   }
