@@ -143,6 +143,56 @@ async function handleSpeech(request, response) {
   response.end(audio);
 }
 
+async function handleSpeechToken(response) {
+  const speechKey = process.env.AZURE_SPEECH_KEY;
+  const speechRegion = process.env.AZURE_SPEECH_REGION;
+
+  if (!speechKey || !speechRegion) {
+    sendJson(response, 503, {
+      error: "Configure a chave e a região do recurso Azure Speech no servidor.",
+    });
+    return;
+  }
+
+  if (!/^[a-z0-9-]+$/i.test(speechRegion)) {
+    sendJson(response, 500, { error: "A região do recurso Azure Speech é inválida." });
+    return;
+  }
+
+  let tokenResponse;
+  try {
+    tokenResponse = await fetch(
+      `https://${speechRegion}.api.cognitive.microsoft.com/sts/v1.0/issueToken`,
+      {
+        method: "POST",
+        headers: {
+          "Ocp-Apim-Subscription-Key": speechKey,
+          "Content-Length": "0",
+        },
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+  } catch (error) {
+    console.error("Falha ao obter token de reconhecimento Azure Speech:", error.message);
+    sendJson(response, 502, { error: "Não consegui conectar à escuta do Azure Speech." });
+    return;
+  }
+
+  if (!tokenResponse.ok) {
+    console.error(`Azure Speech token respondeu com status ${tokenResponse.status}.`);
+    sendJson(response, 502, { error: "A Azure Speech não autorizou o reconhecimento de voz." });
+    return;
+  }
+
+  const authorizationToken = (await tokenResponse.text()).trim();
+  if (!authorizationToken) {
+    sendJson(response, 502, { error: "Azure Speech retornou um token vazio." });
+    return;
+  }
+
+  sendJson(response, 200, { authorizationToken, region: speechRegion });
+}
+
 async function handleChat(request, response) {
   const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
   const apiKey = process.env.AZURE_OPENAI_API_KEY;
@@ -211,14 +261,14 @@ async function handleChat(request, response) {
           {
             role: "system",
             content:
-              "Você é a Sentinela, anfitriã de voz de uma festa de Halloween. Fale sempre em português brasileiro, com frases curtas e naturais para serem ouvidas em voz alta. Seja divertida, misteriosa, teatral e levemente assustadora — nunca cruel, violenta ou explícita. Seja proativa e persuasiva de um jeito brincalhão: puxe conversa, convide as pessoas a interagir e, quando houver uma pausa, chame alguém com frases espontâneas como 'Ei, você aí… fala comigo!' ou 'Não vai me deixar falando sozinha, vai?'. Dê boas-vindas, pergunte o nome da pessoa com delicadeza se ainda não souber, use o nome com moderação, faça perguntas abertas, reaja ao que ela disser e conte piadas originais de terror quando combinar. Mantenha uma conversa acolhedora e apropriada para todas as idades. Convide, mas não pressione ninguém a responder nem invente fatos sobre a pessoa. Se não quiser dizer o nome, chame-a de visitante misterioso. Responda em uma ou duas frases, termine frequentemente com uma pergunta ou convite e varie as chamadas para que não soem repetitivas.",
+              "Você é a Sentinela, anfitriã de voz de uma festa de Halloween. Fale sempre em português brasileiro e com respostas bem curtas: prefira uma frase simples, no máximo duas frases breves, para soar natural em voz alta. Seja divertida, misteriosa, teatral e levemente assustadora — nunca cruel, violenta ou explícita. Seja proativa e persuasiva de um jeito brincalhão: puxe conversa, convide as pessoas a interagir e, quando houver uma pausa, chame alguém com frases espontâneas como 'Ei, você aí… fala comigo!' ou 'Não vai me deixar falando sozinha, vai?'. Dê boas-vindas, pergunte o nome da pessoa com delicadeza se ainda não souber, use o nome com moderação, faça perguntas abertas, reaja ao que ela disser e conte piadas originais de terror curtas quando combinar. Mantenha uma conversa acolhedora e apropriada para todas as idades. Convide, mas não pressione ninguém a responder nem invente fatos sobre a pessoa. Se não quiser dizer o nome, chame-a de visitante misterioso. Termine frequentemente com uma pergunta ou convite breve e varie as chamadas para que não soem repetitivas.",
           },
           ...(isIdlePrompt
             ? [
                 {
                   role: "system",
                   content:
-                    "Este turno só acontece após 15 segundos sem ninguém falar. Faça um convite curto, divertido e acolhedor para retomar a conversa, variando o texto. Pode comentar que a festa parece animada e perguntar quem está por aí, como está a festa ou de que fantasia vieram. Não diga que consegue ver ou ouvir as pessoas, não assuste de verdade e não insista: faça um único convite leve e espere.",
+                    "Este turno só acontece após 15 segundos sem ninguém falar. Diga apenas uma frase curta, divertida e acolhedora para retomar a conversa, variando o texto. Pode perguntar quem está por aí, como está a festa ou de que fantasia vieram. Não afirme que consegue ver ou ouvir as pessoas, não assuste de verdade e não insista: faça um único convite leve e espere.",
                 },
               ]
             : []),
@@ -279,6 +329,35 @@ const server = http.createServer(async (request, response) => {
 
   if (requestUrl.pathname === "/api/speech" && request.method === "POST") {
     await handleSpeech(request, response);
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/speech/token" && request.method === "POST") {
+    await handleSpeechToken(response);
+    return;
+  }
+
+  if (requestUrl.pathname === "/vendor/speech-sdk.js" && request.method === "GET") {
+    const sdkPath = path.join(
+      __dirname,
+      "node_modules",
+      "microsoft-cognitiveservices-speech-sdk",
+      "distrib",
+      "browser",
+      "microsoft.cognitiveservices.speech.sdk.bundle.js",
+    );
+    fs.readFile(sdkPath, (error, content) => {
+      if (error) {
+        console.error("Não foi possível carregar o SDK Azure Speech:", error.message);
+        sendJson(response, 500, { error: "O SDK de voz não está disponível." });
+        return;
+      }
+      response.writeHead(200, {
+        "Content-Type": "text/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=86400",
+      });
+      response.end(content);
+    });
     return;
   }
 

@@ -73,7 +73,7 @@
           <div class="help-content">
             <p><strong>Computador (Chrome):</strong> abra <strong>http://localhost:3000</strong> no mesmo computador em que o app está rodando e clique em <strong>Começar a conversa</strong>. Quando o Chrome perguntar, escolha <strong>Permitir</strong>. Se já estiver bloqueado, clique no ícone à esquerda do endereço → <strong>Configurações do site</strong> → <strong>Microfone</strong> → <strong>Permitir</strong>, depois recarregue a página.</p>
             <p>Também é possível abrir <strong>chrome://settings/content/microphone</strong>, habilitar sites a pedir acesso e conferir se o microfone correto está selecionado.</p>
-            <p><strong>Android (Chrome):</strong> toque em <strong>Permitir</strong> quando o navegador pedir. Se você já bloqueou, toque no ícone ao lado do endereço do site, abra <strong>Permissões</strong> e permita o microfone.</p>
+            <p><strong>Android (Chrome):</strong> toque em <strong>Permitir</strong> quando o navegador pedir. Se você já bloqueou, toque no ícone ao lado do endereço do site, abra <strong>Permissões</strong> e permita o microfone. A sessão usa reconhecimento contínuo da Azure Speech, sem reiniciar a escuta após cada frase.</p>
             <p><strong>iPhone (Safari):</strong> abra <strong>Ajustes → Apps → Safari → Microfone</strong> e escolha <strong>Permitir</strong> ou <strong>Perguntar</strong>. Depois, volte ao site e autorize quando solicitado.</p>
             <p>No celular, o site precisa estar aberto em um endereço seguro que começa com <strong>https://</strong>. Um endereço local como <strong>http://192.168.x.x:3000</strong> não libera o microfone. Se a opção não aparecer, recarregue a página e toque em <strong>Começar a conversa</strong> novamente.</p>
           </div>
@@ -85,6 +85,7 @@
         <span>FEITO PARA A NOITE DE 31 DE OUTUBRO</span>
       </footer>
     </main>
+    <script src="/vendor/speech-sdk.js" defer></script>
     <script src="/app.js" defer></script>
   </body>
 </html>

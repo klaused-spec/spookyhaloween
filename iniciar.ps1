@@ -3,6 +3,7 @@ $ErrorActionPreference = 'Stop'
 $appDirectory = $PSScriptRoot
 $envFile = Join-Path $appDirectory '.env'
 $serverFile = Join-Path $appDirectory 'server.js'
+$speechSdkBundle = Join-Path $appDirectory 'node_modules\microsoft-cognitiveservices-speech-sdk\distrib\browser\microsoft.cognitiveservices.speech.sdk.bundle.js'
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   throw 'Node.js não foi encontrado. Instale o Node.js 18 ou superior e tente novamente.'
@@ -14,6 +15,10 @@ if (-not (Test-Path -LiteralPath $envFile -PathType Leaf)) {
 
 if (-not (Test-Path -LiteralPath $serverFile -PathType Leaf)) {
   throw "Arquivo server.js não encontrado em $appDirectory."
+}
+
+if (-not (Test-Path -LiteralPath $speechSdkBundle -PathType Leaf)) {
+  throw 'Dependências do app não encontradas. Execute npm install e tente novamente.'
 }
 
 foreach ($line in Get-Content -LiteralPath $envFile) {
