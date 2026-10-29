@@ -41,7 +41,7 @@
         <div class="conversation" aria-live="polite" aria-relevant="additions text">
           <div class="message assistant-message" id="welcome-message">
             <span class="message-label">OS MORADORES</span>
-            <p>Luana, Caio e Pedro já perceberam sua chegada. Quem vai descobrir seu nome primeiro?</p>
+            <p>Hehehe... ei, você. Qual é seu nome? O que te trouxe à festa?</p>
           </div>
         </div>
       </section>
@@ -58,35 +58,6 @@
         <button class="text-toggle" id="text-toggle" type="button">
           Prefere digitar? <span>Enviar uma mensagem</span>
         </button>
-        <details class="story-settings">
-          <summary>História da festa (resumo do livro incluído)</summary>
-          <div class="story-content">
-            <label for="story-input">O resumo do livro já vem carregado. Se preferir, substitua pelo seu texto ou carregue um arquivo .txt ou .md.</label>
-            <div class="story-file-control">
-              <input
-                class="sr-only"
-                id="story-file"
-                type="file"
-                accept=".txt,.md,text/plain,text/markdown"
-              />
-              <label class="story-file-button" for="story-file">Escolher arquivo</label>
-              <span id="story-file-name">Resumo do livro (incluído no app)</span>
-            </div>
-            <textarea
-              id="story-input"
-              maxlength="500000"
-              rows="5"
-              placeholder="O resumo do livro será carregado automaticamente..."
-            ></textarea>
-            <div class="story-footer">
-              <span id="story-status" role="status">O resumo incluído inspira pistas originais após 15 segundos de silêncio.</span>
-              <span id="story-count">0 / 500.000</span>
-            </div>
-            <p class="story-privacy">
-              O resumo fica nesta página; pequenos trechos são enviados à Azure nos momentos de história. O app não salva alterações.
-            </p>
-          </div>
-        </details>
         <form class="text-form" id="text-form" hidden>
           <label class="sr-only" for="text-input">Sua mensagem</label>
           <input

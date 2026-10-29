@@ -6,18 +6,9 @@ const conversation = document.querySelector(".conversation");
 const textToggle = document.querySelector("#text-toggle");
 const textForm = document.querySelector("#text-form");
 const textInput = document.querySelector("#text-input");
-const storyInput = document.querySelector("#story-input");
-const storyFile = document.querySelector("#story-file");
-const storyFileName = document.querySelector("#story-file-name");
-const storyStatus = document.querySelector("#story-status");
-const storyCount = document.querySelector("#story-count");
 const microphoneHelp = document.querySelector(".microphone-help");
 
 const IDLE_TIMEOUT_MS = 15_000;
-const MAX_STORY_TEXT_LENGTH = 500_000;
-const MAX_STORY_FILE_SIZE = 2_000_000;
-const STORY_EXCERPT_LENGTH = 4_500;
-const DEFAULT_STORY_FILE_NAME = "Resumo do livro (incluído no app)";
 const characters = {
   luana: { name: "LUANA · A FANTASMA", pitch: 0.62 },
   caio: { name: "CAIO · O VAMPIRO", pitch: 0.45 },
@@ -25,10 +16,6 @@ const characters = {
 };
 const messages = [];
 let assistantTurnCount = 0;
-let storyTurnCount = 0;
-const storyNotes = [];
-let storyInputEdited = false;
-let defaultStoryPromise = Promise.resolve();
 let recognition;
 let speechConfig;
 let microphoneStream;
@@ -71,27 +58,6 @@ function showListeningStatus() {
   if (sessionActive && !isSpeaking && !isWaitingForReply) {
     setStatus("Estou ouvindo…", true);
   }
-}
-
-function getStoryExcerpt(text, storyTurn) {
-  if (text.length <= STORY_EXCERPT_LENGTH) return text;
-
-  const excerptCount = Math.ceil(text.length / STORY_EXCERPT_LENGTH);
-  const start = (storyTurn % excerptCount) * STORY_EXCERPT_LENGTH;
-
-  let excerptStart = start;
-  if (excerptStart > 0) {
-    const nextWord = text.indexOf(" ", excerptStart);
-    if (nextWord !== -1 && nextWord < excerptStart + 200) excerptStart = nextWord + 1;
-  }
-
-  let excerptEnd = Math.min(excerptStart + STORY_EXCERPT_LENGTH, text.length);
-  if (excerptEnd < text.length) {
-    const previousWord = text.lastIndexOf(" ", excerptEnd);
-    if (previousWord > excerptStart + STORY_EXCERPT_LENGTH - 500) excerptEnd = previousWord;
-  }
-
-  return text.slice(excerptStart, excerptEnd).trim();
 }
 
 async function fetchSpeechAuthorization() {
@@ -315,7 +281,8 @@ function speakWithBrowser(lines, requestId) {
   const utterances = lines.map((line) => {
     const utterance = new SpeechSynthesisUtterance(line.text);
     utterance.lang = "pt-BR";
-    utterance.rate = 0.9;
+    utterance.rate = 0.85;
+    utterance.volume = 0.6;
     utterance.pitch = characters[line.characterId]?.pitch || 0.8;
     return utterance;
   });
@@ -446,9 +413,6 @@ async function requestReply({ text, idle = false }) {
   setStatus(idle ? "A Sentinela está chamando a festa…" : "A Sentinela está pensando…");
 
   try {
-    await defaultStoryPromise;
-    const storySource = storyInput.value.trim();
-    const storyEnabled = storySource.length > 0;
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -456,10 +420,6 @@ async function requestReply({ text, idle = false }) {
         messages: messages.slice(-12),
         idle,
         turnIndex: assistantTurnCount,
-        storyEnabled,
-        storyText: idle && storyEnabled ? getStoryExcerpt(storySource, storyTurnCount) : "",
-        storyNotes: storyNotes.slice(-8),
-        storyBeatIndex: storyTurnCount,
       }),
     });
     const result = await response.json();
@@ -474,11 +434,6 @@ async function requestReply({ text, idle = false }) {
     assistantTurnCount++;
     result.lines.forEach((line) => addMessage("assistant", line.text, line.characterId));
     isWaitingForReply = false;
-    if (storyEnabled && result.storyBeat) {
-      storyNotes.push(result.lines.map((line) => line.text).join(" ").slice(0, 300));
-      if (storyNotes.length > 8) storyNotes.shift();
-      storyTurnCount++;
-    }
     if (sessionActive) {
       speak(result.lines);
     } else {
@@ -589,74 +544,6 @@ textForm.addEventListener("submit", (event) => {
   sendMessage(text);
 });
 
-storyInput.addEventListener("input", () => {
-  storyInputEdited = true;
-  const length = storyInput.value.length;
-  storyCount.textContent = `${length.toLocaleString("pt-BR")} / ${MAX_STORY_TEXT_LENGTH.toLocaleString("pt-BR")}`;
-  storyStatus.textContent = length
-    ? "Pronto: a história avança em pequenas pistas durante os silêncios de 15 segundos."
-    : "Sem texto de inspiração, os personagens puxam conversa após 15 segundos de silêncio.";
-  storyTurnCount = 0;
-  storyNotes.length = 0;
-  if (!length) {
-    storyFileName.textContent = "Nenhum arquivo escolhido";
-  } else if (storyFileName.textContent !== DEFAULT_STORY_FILE_NAME) {
-    storyFileName.textContent = "Texto editado";
-  }
-});
-
-storyFile.addEventListener("change", async () => {
-  const [file] = storyFile.files || [];
-  if (!file) return;
-  if (!/\.(txt|md)$/i.test(file.name)) {
-    storyStatus.textContent = "Escolha um arquivo .txt ou .md.";
-    storyFile.value = "";
-    return;
-  }
-  if (file.size > MAX_STORY_FILE_SIZE) {
-    storyStatus.textContent = "O arquivo é grande demais. O limite é 2 MB.";
-    storyFile.value = "";
-    return;
-  }
-
-  try {
-    const text = await file.text();
-    if (text.length > MAX_STORY_TEXT_LENGTH) {
-      storyStatus.textContent = `O texto ultrapassa o limite de ${MAX_STORY_TEXT_LENGTH.toLocaleString("pt-BR")} caracteres.`;
-      storyFile.value = "";
-      return;
-    }
-    storyInput.value = text;
-    storyInput.dispatchEvent(new Event("input"));
-    storyFileName.textContent = file.name;
-  } catch (error) {
-    console.error("Não foi possível ler o arquivo de inspiração:", error);
-    storyStatus.textContent = "Não foi possível ler esse arquivo. Tente colar o texto diretamente.";
-    storyFile.value = "";
-  }
-});
-
 if (!window.SpeechSDK) {
   setStatus("O SDK de voz não carregou. Recarregue a página ou use o campo para digitar.");
 }
-
-defaultStoryPromise = fetch("/resumo.md")
-  .then(async (response) => {
-    if (!response.ok) throw new Error("O resumo de inspiração não está disponível.");
-    const text = (await response.text()).trim();
-    if (!text || text.length > MAX_STORY_TEXT_LENGTH) {
-      throw new Error("O resumo de inspiração está vazio ou excede o limite permitido.");
-    }
-    if (!storyInputEdited) {
-      storyInput.value = text;
-      storyInput.dispatchEvent(new Event("input"));
-      storyFileName.textContent = DEFAULT_STORY_FILE_NAME;
-      storyStatus.textContent = "Resumo do livro pronto: as pistas surgem após 15 segundos de silêncio.";
-    }
-    return true;
-  })
-  .catch((error) => {
-    console.error("Não foi possível carregar o resumo de inspiração:", error);
-    storyStatus.textContent = "Não foi possível carregar o resumo incluído. Recarregue a página ou escolha um arquivo.";
-    return false;
-  });
