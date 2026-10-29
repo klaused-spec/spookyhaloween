@@ -17,6 +17,7 @@ const IDLE_TIMEOUT_MS = 15_000;
 const MAX_STORY_TEXT_LENGTH = 500_000;
 const MAX_STORY_FILE_SIZE = 2_000_000;
 const STORY_EXCERPT_LENGTH = 4_500;
+const DEFAULT_STORY_FILE_NAME = "Resumo do livro (incluído no app)";
 const characters = {
   luana: { name: "LUANA · A FANTASMA", pitch: 0.72 },
   caio: { name: "CAIO · O VAMPIRO", pitch: 0.55 },
@@ -26,6 +27,8 @@ const messages = [];
 let assistantTurnCount = 0;
 let storyTurnCount = 0;
 const storyNotes = [];
+let storyInputEdited = false;
+let defaultStoryPromise = Promise.resolve();
 let recognition;
 let speechConfig;
 let microphoneStream;
@@ -443,6 +446,7 @@ async function requestReply({ text, idle = false }) {
   setStatus(idle ? "A Sentinela está chamando a festa…" : "A Sentinela está pensando…");
 
   try {
+    await defaultStoryPromise;
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -583,16 +587,17 @@ textForm.addEventListener("submit", (event) => {
 });
 
 storyInput.addEventListener("input", () => {
+  storyInputEdited = true;
   const length = storyInput.value.length;
   storyCount.textContent = `${length.toLocaleString("pt-BR")} / ${MAX_STORY_TEXT_LENGTH.toLocaleString("pt-BR")}`;
   storyStatus.textContent = length
     ? "Pronto: a história avança em pequenas pistas durante os silêncios de 15 segundos."
-    : "Os personagens contam pistas originais do livro quando houver 15 segundos de silêncio.";
+    : "Sem texto de inspiração, os personagens puxam conversa após 15 segundos de silêncio.";
   storyTurnCount = 0;
   storyNotes.length = 0;
   if (!length) {
     storyFileName.textContent = "Nenhum arquivo escolhido";
-  } else if (storyFileName.textContent !== "Nenhum arquivo escolhido") {
+  } else if (storyFileName.textContent !== DEFAULT_STORY_FILE_NAME) {
     storyFileName.textContent = "Texto editado";
   }
 });
@@ -631,3 +636,24 @@ storyFile.addEventListener("change", async () => {
 if (!window.SpeechSDK) {
   setStatus("O SDK de voz não carregou. Recarregue a página ou use o campo para digitar.");
 }
+
+defaultStoryPromise = fetch("/resumo.md")
+  .then(async (response) => {
+    if (!response.ok) throw new Error("O resumo de inspiração não está disponível.");
+    const text = (await response.text()).trim();
+    if (!text || text.length > MAX_STORY_TEXT_LENGTH) {
+      throw new Error("O resumo de inspiração está vazio ou excede o limite permitido.");
+    }
+    if (!storyInputEdited) {
+      storyInput.value = text;
+      storyInput.dispatchEvent(new Event("input"));
+      storyFileName.textContent = DEFAULT_STORY_FILE_NAME;
+      storyStatus.textContent = "Resumo do livro pronto: as pistas surgem após 15 segundos de silêncio.";
+    }
+    return true;
+  })
+  .catch((error) => {
+    console.error("Não foi possível carregar o resumo de inspiração:", error);
+    storyStatus.textContent = "Não foi possível carregar o resumo incluído. Recarregue a página ou escolha um arquivo.";
+    return false;
+  });

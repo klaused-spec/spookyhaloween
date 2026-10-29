@@ -59,9 +59,9 @@
           Prefere digitar? <span>Enviar uma mensagem</span>
         </button>
         <details class="story-settings">
-          <summary>Adicionar texto de inspiração (opcional)</summary>
+          <summary>História da festa (resumo do livro incluído)</summary>
           <div class="story-content">
-            <label for="story-input">Cole o texto ou carregue um livro em .txt ou .md</label>
+            <label for="story-input">O resumo do livro já vem carregado. Se preferir, substitua pelo seu texto ou carregue um arquivo .txt ou .md.</label>
             <div class="story-file-control">
               <input
                 class="sr-only"
@@ -70,20 +70,20 @@
                 accept=".txt,.md,text/plain,text/markdown"
               />
               <label class="story-file-button" for="story-file">Escolher arquivo</label>
-              <span id="story-file-name">Nenhum arquivo escolhido</span>
+              <span id="story-file-name">Resumo do livro (incluído no app)</span>
             </div>
             <textarea
               id="story-input"
               maxlength="500000"
               rows="5"
-              placeholder="Cole aqui o texto que vai inspirar a história da festa..."
+              placeholder="O resumo do livro será carregado automaticamente..."
             ></textarea>
             <div class="story-footer">
-              <span id="story-status" role="status">Os personagens contam pistas originais do livro quando houver 15 segundos de silêncio.</span>
+              <span id="story-status" role="status">O resumo incluído inspira pistas originais após 15 segundos de silêncio.</span>
               <span id="story-count">0 / 500.000</span>
             </div>
             <p class="story-privacy">
-              O livro fica apenas nesta página; pequenos trechos são enviados à Azure nos momentos de história. O app não salva o arquivo.
+              O resumo fica nesta página; pequenos trechos são enviados à Azure nos momentos de história. O app não salva alterações.
             </p>
           </div>
         </details>
