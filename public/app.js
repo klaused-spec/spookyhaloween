@@ -3,6 +3,7 @@ const buttonLabel = document.querySelector("#button-label");
 const statusLine = document.querySelector("#status-line");
 const statusText = document.querySelector("#status-text");
 const conversation = document.querySelector(".conversation");
+const guestMemoryList = document.querySelector("#guest-memory-list");
 const textToggle = document.querySelector("#text-toggle");
 const textForm = document.querySelector("#text-form");
 const textInput = document.querySelector("#text-input");
@@ -10,12 +11,11 @@ const microphoneHelp = document.querySelector(".microphone-help");
 
 const IDLE_TIMEOUT_MS = 15_000;
 const characters = {
-  luana: { name: "LUANA · A FANTASMA", pitch: 0.62 },
-  caio: { name: "CAIO · O VAMPIRO", pitch: 0.45 },
-  pedro: { name: "PEDRO · O ZELADOR", pitch: 0.8 },
+  luana: { name: "LUANA", pitch: 0.62 },
 };
 const messages = [];
-let assistantTurnCount = 0;
+const guestMemory = [];
+let activeGuestName = "";
 let recognition;
 let speechConfig;
 let microphoneStream;
@@ -87,6 +87,57 @@ function addMessage(role, text, characterId) {
   conversation.scrollTop = conversation.scrollHeight;
 }
 
+function updateGuestMemory(update) {
+  if (!update || typeof update !== "object") return;
+  const name = typeof update.name === "string" ? update.name.trim().slice(0, 60) : "";
+  const guestName = name || activeGuestName;
+  if (!guestName) return;
+
+  const normalizedName = guestName.toLocaleLowerCase("pt-BR");
+  let guest = guestMemory.find(
+    (entry) => entry.name.toLocaleLowerCase("pt-BR") === normalizedName,
+  );
+  if (!guest) {
+    if (!name || guestMemory.length >= 40) return;
+    guest = { name, foods: [], games: [] };
+    guestMemory.push(guest);
+  }
+  if (name) {
+    guest.name = name;
+    activeGuestName = name;
+  }
+  for (const key of ["foods", "games"]) {
+    if (!Array.isArray(update[key])) continue;
+    for (const fact of update[key]) {
+      if (
+        typeof fact === "string" &&
+        fact.trim() &&
+        !guest[key].some((savedFact) =>
+          savedFact.toLocaleLowerCase("pt-BR") === fact.trim().toLocaleLowerCase("pt-BR"),
+        )
+      ) {
+        guest[key].push(fact.trim().slice(0, 60));
+      }
+    }
+    guest[key] = guest[key].slice(0, 8);
+  }
+
+  guestMemoryList.replaceChildren();
+  for (const savedGuest of guestMemory) {
+    const item = document.createElement("li");
+    const details = [
+      savedGuest.foods.length ? `comidas: ${savedGuest.foods.join(", ")}` : "",
+      savedGuest.games.length ? `brincadeiras: ${savedGuest.games.join(", ")}` : "",
+    ].filter(Boolean);
+    item.textContent = details.length
+      ? `${savedGuest.name} — ${details.join("; ")}`
+      : savedGuest.name;
+    guestMemoryList.append(item);
+  }
+
+  if (guest.foods.length && guest.games.length) activeGuestName = "";
+}
+
 function stopRecognition() {
   window.clearTimeout(recognitionRetryTimer);
   recognitionRetryTimer = undefined;
@@ -97,9 +148,16 @@ function stopRecognition() {
   if (!activeRecognizer) return;
 
   const closeRecognizer = () => {
-    activeRecognizer.close().catch((error) => {
+    try {
+      const closeResult = activeRecognizer.close();
+      if (closeResult && typeof closeResult.catch === "function") {
+        closeResult.catch((error) => {
+          console.error("Não foi possível liberar o reconhecimento de voz:", error);
+        });
+      }
+    } catch (error) {
       console.error("Não foi possível liberar o reconhecimento de voz:", error);
-    });
+    }
   };
   try {
     activeRecognizer.stopContinuousRecognitionAsync(
@@ -365,7 +423,7 @@ async function speak(lines) {
   isSpeaking = true;
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   releaseAudio();
-  setStatus("A Sentinela está preparando a voz…");
+  setStatus("Luana está preparando a voz…");
 
   try {
     const audioSegments = await Promise.all(
@@ -377,7 +435,7 @@ async function speak(lines) {
         });
         if (!response.ok) {
           const result = await response.json();
-          throw new Error(result.error || "Uma das vozes da Azure não pôde ser gerada.");
+          throw new Error(result.error || "A voz da Azure não pôde ser gerada.");
         }
         return response.blob();
       }),
@@ -419,7 +477,8 @@ async function requestReply({ text, idle = false }) {
       body: JSON.stringify({
         messages: messages.slice(-12),
         idle,
-        turnIndex: assistantTurnCount,
+        guestMemory,
+        activeGuest: activeGuestName,
       }),
     });
     const result = await response.json();
@@ -427,11 +486,11 @@ async function requestReply({ text, idle = false }) {
       throw new Error(result.error || "A conversa não pôde continuar.");
     }
 
+    updateGuestMemory(result.guestUpdate);
     const reply = result.lines
       .map((line) => `${characters[line.characterId].name}: ${line.text}`)
       .join("\n");
     messages.push({ role: "assistant", content: reply });
-    assistantTurnCount++;
     result.lines.forEach((line) => addMessage("assistant", line.text, line.characterId));
     isWaitingForReply = false;
     if (sessionActive) {
