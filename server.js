@@ -2,6 +2,39 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 
+function loadEnvironmentFile() {
+  const environmentFile = path.join(__dirname, ".env");
+  if (!fs.existsSync(environmentFile)) return;
+
+  const contents = fs.readFileSync(environmentFile, "utf8").replace(/^\uFEFF/, "");
+  for (const [index, rawLine] of contents.split(/\r?\n/).entries()) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+
+    const match = rawLine.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (!match) {
+      throw new Error(`Linha ${index + 1} inválida no arquivo .env.`);
+    }
+
+    const [, name] = match;
+    let value = match[2];
+    if (value.length >= 2) {
+      const firstCharacter = value[0];
+      const lastCharacter = value[value.length - 1];
+      if (
+        (firstCharacter === '"' && lastCharacter === '"') ||
+        (firstCharacter === "'" && lastCharacter === "'")
+      ) {
+        value = value.slice(1, -1);
+      }
+    }
+
+    if (process.env[name] === undefined) process.env[name] = value;
+  }
+}
+
+loadEnvironmentFile();
+
 const publicDirectory = path.join(__dirname, "public");
 const port = Number(process.env.PORT || 3000);
 const MAX_REPLY_LENGTH = Number(process.env.HALLOWEEN_MAX_REPLY_LENGTH || 100);
@@ -367,8 +400,9 @@ async function handleChat(request, response) {
     const missing = idleQuestions.length > 0
       ? missingPromptConfig
       : [...missingPromptConfig, "HALLOWEEN_IDLE_QUESTIONS"];
+    console.error("Configuração de prompts incompleta:", missing.join(", "));
     sendJson(response, 503, {
-      error: `Configure os prompts e contextos no .env: ${missing.join(", ")}.`,
+      error: "Os prompts da conversa não estão configurados. Confira as variáveis HALLOWEEN_* no .env e reinicie o servidor.",
     });
     return;
   }
