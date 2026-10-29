@@ -9,7 +9,13 @@ const textInput = document.querySelector("#text-input");
 const microphoneHelp = document.querySelector(".microphone-help");
 
 const IDLE_TIMEOUT_MS = 15_000;
+const characters = {
+  luana: { name: "LUANA · A FANTASMA", pitch: 0.72 },
+  caio: { name: "CAIO · O VAMPIRO", pitch: 0.55 },
+  pedro: { name: "PEDRO · O ZELADOR", pitch: 0.9 },
+};
 const messages = [];
+let assistantTurnCount = 0;
 let recognition;
 let speechConfig;
 let microphoneStream;
@@ -23,6 +29,7 @@ let tokenRefreshTimer;
 let recognitionRetryCount = 0;
 let currentAudio;
 let audioObjectUrl;
+let finishCurrentAudio;
 let speechRequestId = 0;
 
 function setStatus(text, active = false) {
@@ -62,13 +69,16 @@ async function fetchSpeechAuthorization() {
   return result;
 }
 
-function addMessage(role, text) {
+function addMessage(role, text, characterId) {
   const message = document.createElement("article");
   message.className = `message ${role === "user" ? "user-message" : "assistant-message"}`;
+  if (role === "assistant" && characters[characterId]) {
+    message.classList.add(`character-${characterId}`);
+  }
 
   const label = document.createElement("span");
   label.className = "message-label";
-  label.textContent = role === "user" ? "VOCÊ" : "A SENTINELA";
+  label.textContent = role === "user" ? "VOCÊ" : characters[characterId]?.name || "A SENTINELA";
 
   const content = document.createElement("p");
   content.textContent = text;
@@ -256,7 +266,7 @@ async function startAzureRecognition(generation = sessionGeneration) {
   }
 }
 
-function speakWithBrowser(text, requestId) {
+function speakWithBrowser(lines, requestId) {
   if (requestId !== speechRequestId || !sessionActive) return;
   if (!("speechSynthesis" in window)) {
     isSpeaking = false;
@@ -268,27 +278,39 @@ function speakWithBrowser(text, requestId) {
 
   setStatus("Usando a voz alternativa do navegador…");
   isSpeaking = true;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "pt-BR";
-  utterance.rate = 0.9;
-  utterance.pitch = 0.8;
-  utterance.onend = () => {
+  const utterances = lines.map((line) => {
+    const utterance = new SpeechSynthesisUtterance(line.text);
+    utterance.lang = "pt-BR";
+    utterance.rate = 0.9;
+    utterance.pitch = characters[line.characterId]?.pitch || 0.8;
+    return utterance;
+  });
+  const finishFallback = () => {
     isSpeaking = false;
     showListeningStatus();
     scheduleIdlePrompt();
   };
-  utterance.onerror = (event) => {
-    isSpeaking = false;
-    console.error("A fala não pôde ser reproduzida:", event.error);
-    setStatus("Não consegui reproduzir a voz. Confira o áudio do celular.");
-    showListeningStatus();
-    scheduleIdlePrompt();
-  };
+  utterances.forEach((utterance, index) => {
+    if (index === utterances.length - 1) utterance.onend = finishFallback;
+    utterance.onerror = (event) => {
+      console.error("A fala não pôde ser reproduzida:", event.error);
+      if (index === utterances.length - 1) {
+        setStatus("Não consegui reproduzir a voz. Confira o áudio do celular.");
+        finishFallback();
+      }
+    };
+  });
   window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  utterances.forEach((utterance) => window.speechSynthesis.speak(utterance));
 }
 
 function releaseAudio() {
+  if (finishCurrentAudio) {
+    const finish = finishCurrentAudio;
+    finishCurrentAudio = undefined;
+    finish();
+    return;
+  }
   if (currentAudio) {
     currentAudio.onended = null;
     currentAudio.onerror = null;
@@ -303,7 +325,41 @@ function releaseAudio() {
   }
 }
 
-async function speak(text) {
+function playAudio(audio, requestId) {
+  if (requestId !== speechRequestId || !sessionActive) return Promise.resolve();
+
+  audioObjectUrl = URL.createObjectURL(audio);
+  currentAudio = new Audio(audioObjectUrl);
+  const activeAudio = currentAudio;
+  const activeUrl = audioObjectUrl;
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      activeAudio.onended = null;
+      activeAudio.onerror = null;
+      activeAudio.pause();
+      activeAudio.removeAttribute("src");
+      activeAudio.load();
+      URL.revokeObjectURL(activeUrl);
+      if (currentAudio === activeAudio) currentAudio = undefined;
+      if (audioObjectUrl === activeUrl) audioObjectUrl = undefined;
+      if (finishCurrentAudio === cancelPlayback) finishCurrentAudio = undefined;
+      if (error) reject(error);
+      else resolve();
+    };
+    const cancelPlayback = () => finish();
+
+    finishCurrentAudio = cancelPlayback;
+    activeAudio.onended = () => finish();
+    activeAudio.onerror = () => finish(new Error("O áudio não pôde ser reproduzido."));
+    activeAudio.play().catch(finish);
+  });
+}
+
+async function speak(lines) {
   const requestId = ++speechRequestId;
   isSpeaking = true;
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
@@ -311,47 +367,37 @@ async function speak(text) {
   setStatus("A Sentinela está preparando a voz…");
 
   try {
-    const response = await fetch("/api/speech", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    if (!response.ok) {
-      const result = await response.json();
-      throw new Error(result.error || "A voz da Azure não pôde ser gerada.");
-    }
-
-    const audio = await response.blob();
+    const audioSegments = await Promise.all(
+      lines.map(async (line) => {
+        const response = await fetch("/api/speech", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lines: [line] }),
+        });
+        if (!response.ok) {
+          const result = await response.json();
+          throw new Error(result.error || "Uma das vozes da Azure não pôde ser gerada.");
+        }
+        return response.blob();
+      }),
+    );
     if (requestId !== speechRequestId || !sessionActive) return;
 
-    setStatus("A Sentinela sussurra na escuridão…");
-    audioObjectUrl = URL.createObjectURL(audio);
-    currentAudio = new Audio(audioObjectUrl);
-    currentAudio.onended = () => {
-      releaseAudio();
-      if (requestId !== speechRequestId) return;
-      isSpeaking = false;
-      showListeningStatus();
-      scheduleIdlePrompt();
-    };
-    currentAudio.onerror = () => {
-      console.error("O áudio da Azure não pôde ser reproduzido neste navegador.");
-      releaseAudio();
-      speakWithBrowser(text, requestId);
-    };
-
-    try {
-      await currentAudio.play();
-    } catch (error) {
-      console.error("A reprodução de áudio da Azure foi bloqueada:", error);
-      releaseAudio();
-      speakWithBrowser(text, requestId);
+    for (let index = 0; index < audioSegments.length; index++) {
+      if (requestId !== speechRequestId || !sessionActive) return;
+      setStatus(`${characters[lines[index].characterId].name.split(" · ")[0]} sussurra…`);
+      await playAudio(audioSegments[index], requestId);
     }
+
+    if (requestId !== speechRequestId || !sessionActive) return;
+    isSpeaking = false;
+    showListeningStatus();
+    scheduleIdlePrompt();
   } catch (error) {
     if (requestId !== speechRequestId || !sessionActive) return;
     console.error(error.message);
     setStatus(error.message);
-    speakWithBrowser(text, requestId);
+    speakWithBrowser(lines, requestId);
   }
 }
 
@@ -369,18 +415,26 @@ async function requestReply({ text, idle = false }) {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: messages.slice(-12), idle }),
+      body: JSON.stringify({
+        messages: messages.slice(-12),
+        idle,
+        turnIndex: assistantTurnCount,
+      }),
     });
     const result = await response.json();
     if (!response.ok) {
       throw new Error(result.error || "A conversa não pôde continuar.");
     }
 
-    messages.push({ role: "assistant", content: result.reply });
-    addMessage("assistant", result.reply);
+    const reply = result.lines
+      .map((line) => `${characters[line.characterId].name}: ${line.text}`)
+      .join("\n");
+    messages.push({ role: "assistant", content: reply });
+    assistantTurnCount++;
+    result.lines.forEach((line) => addMessage("assistant", line.text, line.characterId));
     isWaitingForReply = false;
     if (sessionActive) {
-      speak(result.reply);
+      speak(result.lines);
     } else {
       setStatus("Resposta recebida");
     }

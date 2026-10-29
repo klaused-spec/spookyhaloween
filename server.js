@@ -4,6 +4,33 @@ const path = require("node:path");
 
 const publicDirectory = path.join(__dirname, "public");
 const port = Number(process.env.PORT || 3000);
+const characters = [
+  {
+    id: "luana",
+    name: "LUANA · A FANTASMA",
+    voice: "pt-BR-Luana:MAI-Voice-2.1-Flash",
+    style: "whispering",
+    pitch: "-8%",
+    personality: "fantasma anfitriã, curiosa e brincalhona, que conhece os segredos da casa",
+  },
+  {
+    id: "caio",
+    name: "CAIO · O VAMPIRO",
+    voice: "pt-BR-Caio:MAI-Voice-2.1-Flash",
+    style: "fearful",
+    pitch: "-12%",
+    personality: "vampiro dramático e um pouco medroso, que tenta parecer corajoso",
+  },
+  {
+    id: "pedro",
+    name: "PEDRO · O ZELADOR",
+    voice: "pt-BR-Pedro:MAI-Voice-2.1-Flash",
+    style: "softvoice",
+    pitch: "-5%",
+    personality: "zelador misterioso da mansão, observador e dono de humor seco",
+  },
+];
+const charactersById = new Map(characters.map((character) => [character.id, character]));
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -52,9 +79,6 @@ function escapeXml(text) {
 async function handleSpeech(request, response) {
   const speechKey = process.env.AZURE_SPEECH_KEY;
   const speechRegion = process.env.AZURE_SPEECH_REGION;
-  const voice = process.env.AZURE_SPEECH_VOICE || "pt-BR-Luana:MAI-Voice-2.1-Flash";
-  const style = process.env.AZURE_SPEECH_STYLE || "whispering";
-  const supportedStyles = ["fearful", "softvoice", "whispering"];
 
   if (!speechKey || !speechRegion) {
     sendJson(response, 503, {
@@ -73,28 +97,38 @@ async function handleSpeech(request, response) {
     return;
   }
 
-  if (typeof payload.text !== "string" || payload.text.trim().length === 0 || payload.text.length > 1_500) {
-    sendJson(response, 400, { error: "O texto para leitura está vazio ou excede o limite." });
+  const lines = Array.isArray(payload.lines)
+    ? payload.lines
+    : typeof payload.text === "string"
+      ? [{ characterId: "luana", text: payload.text }]
+      : [];
+  if (lines.length !== 1) {
+    sendJson(response, 400, { error: "Envie uma fala por vez para a síntese de voz." });
     return;
   }
 
-  if (!supportedStyles.includes(style)) {
-    sendJson(response, 500, {
-      error: "O estilo de voz configurado não é compatível com a voz Luana 2.1.",
-    });
-    return;
+  const speechSegments = [];
+  for (const line of lines) {
+    const character = charactersById.get(line?.characterId);
+    if (
+      !character ||
+      typeof line.text !== "string" ||
+      line.text.trim().length === 0 ||
+      line.text.length > 240
+    ) {
+      sendJson(response, 400, { error: "Uma das falas ou vozes é inválida." });
+      return;
+    }
+
+    speechSegments.push(
+      `<voice name="${character.voice}"><mstts:express-as style="${character.style}" styledegree="1.2"><prosody rate="-10%" pitch="${character.pitch}">${escapeXml(line.text.trim())}</prosody></mstts:express-as></voice>`,
+    );
   }
 
   const speechUrl = `https://${encodeURIComponent(speechRegion)}.tts.speech.microsoft.com/cognitiveservices/v1`;
   const ssml = [
     '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="pt-BR">',
-    `<voice name="${escapeXml(voice)}">`,
-    `<mstts:express-as style="${style}" styledegree="1.2">`,
-    '<prosody rate="-10%" pitch="-8%">',
-    escapeXml(payload.text.trim()),
-    "</prosody>",
-    "</mstts:express-as>",
-    "</voice>",
+    speechSegments.join('<break time="350ms"/>'),
     "</speak>",
   ].join("");
 
@@ -137,8 +171,6 @@ async function handleSpeech(request, response) {
     "Content-Type": "audio/mpeg",
     "Content-Length": audio.length,
     "Cache-Control": "no-store",
-    "X-Speech-Voice": voice,
-    "X-Speech-Style": style,
   });
   response.end(audio);
 }
@@ -222,6 +254,11 @@ async function handleChat(request, response) {
   }
 
   const isIdlePrompt = payload.idle === true;
+  const turnIndex = Number.isSafeInteger(payload.turnIndex) && payload.turnIndex >= 0
+    ? payload.turnIndex
+    : 0;
+  const speaker = characters[turnIndex % characters.length];
+  const nextSpeaker = characters[(turnIndex + 1) % characters.length];
   const messages = payload.messages.filter(
     (message) =>
       message &&
@@ -260,8 +297,15 @@ async function handleChat(request, response) {
         messages: [
           {
             role: "system",
-            content:
-              "Você é a Sentinela, anfitriã de voz de uma festa de Halloween. Fale sempre em português brasileiro e com respostas bem curtas: prefira uma frase simples, no máximo duas frases breves, para soar natural em voz alta. Seja divertida, misteriosa, teatral e levemente assustadora — nunca cruel, violenta ou explícita. Seja proativa e persuasiva de um jeito brincalhão: puxe conversa, convide as pessoas a interagir e, quando houver uma pausa, chame alguém com frases espontâneas como 'Ei, você aí… fala comigo!' ou 'Não vai me deixar falando sozinha, vai?'. Dê boas-vindas, pergunte o nome da pessoa com delicadeza se ainda não souber, use o nome com moderação, faça perguntas abertas, reaja ao que ela disser e conte piadas originais de terror curtas quando combinar. Mantenha uma conversa acolhedora e apropriada para todas as idades. Convide, mas não pressione ninguém a responder nem invente fatos sobre a pessoa. Se não quiser dizer o nome, chame-a de visitante misterioso. Termine frequentemente com uma pergunta ou convite breve e varie as chamadas para que não soem repetitivas.",
+            content: [
+              "Você escreve a próxima fala de uma pequena turma de três personagens em uma festa de Halloween. Responda sempre em português brasileiro, com uma frase curta por personagem e sem violência nem terror explícito.",
+              ...characters.map(
+                (character) => `${character.name}: ${character.personality}.`,
+              ),
+              `Nesta rodada, ${speaker.name} deve falar primeiro. Ocasionalmente, em cerca de uma a cada quatro rodadas, deixe ${nextSpeaker.name} responder com uma segunda fala curta, como uma brincadeira ou reação entre os dois. Nas outras rodadas, devolva apenas uma fala.`,
+              "Conversem entre si com cumplicidade e humor; cada personagem mantém sua própria personalidade. Se houver silêncio, um deles pode comentar que a festa parece animada e perguntar quem está por aí, mas não alegue que consegue ver ou ouvir as pessoas. Se alguém disser o nome, use-o com moderação. Convide sem pressionar e não invente fatos sobre os convidados.",
+              "Retorne somente um JSON válido no formato {\"lines\":[{\"text\":\"fala curta\"}]}. A primeira fala é obrigatória e deve ser da personagem indicada. A segunda fala é opcional, deve ser da próxima personagem indicada e nunca pode haver mais de duas falas. Cada fala deve ter no máximo 160 caracteres.",
+            ].join(" "),
           },
           ...(isIdlePrompt
             ? [
@@ -282,7 +326,8 @@ async function handleChat(request, response) {
               ]
             : []),
         ],
-        max_tokens: 120,
+        response_format: { type: "json_object" },
+        max_tokens: 220,
         temperature: 0.9,
       }),
       signal: AbortSignal.timeout(30_000),
@@ -317,7 +362,38 @@ async function handleChat(request, response) {
     sendJson(response, 502, { error: "A Azure OpenAI retornou uma resposta vazia." });
     return;
   }
-  sendJson(response, 200, { reply: answer.trim() });
+
+  let parsedAnswer;
+  try {
+    parsedAnswer = JSON.parse(answer);
+  } catch (error) {
+    console.error("A resposta de personagens da Azure não era JSON válido:", error.message);
+    sendJson(response, 502, { error: "A resposta dos personagens veio em um formato inválido." });
+    return;
+  }
+
+  const lines = parsedAnswer.lines;
+  const validLines = Array.isArray(lines) &&
+    lines.length >= 1 &&
+    lines.length <= 2 &&
+    lines.every(
+      (line) =>
+        line &&
+        typeof line.text === "string" &&
+        line.text.trim().length > 0 &&
+        line.text.trim().length <= 160,
+    );
+  if (!validLines) {
+    sendJson(response, 502, { error: "A resposta dos personagens não seguiu a ordem esperada." });
+    return;
+  }
+
+  sendJson(response, 200, {
+    lines: lines.map((line, index) => ({
+      characterId: index === 0 ? speaker.id : nextSpeaker.id,
+      text: line.text.trim(),
+    })),
+  });
 }
 
 const server = http.createServer(async (request, response) => {

@@ -176,6 +176,45 @@ h1 > span {
   line-height: 1.7;
 }
 
+.character-cast {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 19px;
+}
+
+.cast-character {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 999px;
+  color: #dfd4e0;
+  background: rgb(29 24 39 / 80%);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.cast-character small {
+  color: #938896;
+  font-size: 7px;
+  font-weight: 500;
+}
+
+.cast-icon {
+  color: #d3a3d8;
+}
+
+.cast-caio .cast-icon {
+  color: #df8588;
+}
+
+.cast-pedro .cast-icon {
+  color: #9fbd9e;
+}
+
 .conversation {
   display: grid;
   gap: 12px;
@@ -206,6 +245,30 @@ h1 > span {
 .message-label {
   color: #bca4be;
   font-size: 8px;
+}
+
+.character-luana {
+  border-left: 2px solid #bd8bc5;
+}
+
+.character-luana .message-label {
+  color: #d6a4df;
+}
+
+.character-caio {
+  border-left: 2px solid #c86d73;
+}
+
+.character-caio .message-label {
+  color: #e58b90;
+}
+
+.character-pedro {
+  border-left: 2px solid #8da78f;
+}
+
+.character-pedro .message-label {
+  color: #a7c3a6;
 }
 
 .user-message .message-label {
