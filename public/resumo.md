@@ -6,15 +6,17 @@
 
 ## Resumo
 
-Edward Zelnort, um garoto de 12 anos apaixonado por esportes, recebe de um misterioso estranho a missão de encontrar três relíquias ligadas ao fantasma de Romenís Harow. A busca começa com mapas, mensagens cifradas e ruínas escondidas. Cada pista leva Edward a novos lugares e a personagens que conhecem partes diferentes de uma história antiga.
+Edward Zelnort, um garoto de 12 anos que gosta de correr, recebe de um estranho a missão de encontrar três relíquias de Romenís Harow: uma espada, um cristal e um relógio de bolso. A busca começa com um mapa, uma torre em ruínas e mensagens cifradas. Uma pista leva Edward ao parque do silo; outra aponta para um roubo de objetos que servem de pares para as relíquias.
 
-Durante a investigação, Edward encontra fantasmas, faz amizade com Peter e conta com a ajuda de Alcides. Também enfrenta um adversário conhecido como Rapper, que tenta impedir a missão. As pistas revelam que as relíquias foram roubadas e que cada uma deve ser reunida ao objeto que lhe corresponde. A aventura alterna descobertas, enigmas e confrontos, enquanto a aparente sorte de Edward parece guiá-lo.
+Durante a aventura, Edward conhece Peter Norywood e conta com a ajuda do cantor Alcides Geobert. Um adversário conhecido como Rapper tenta tomar o mapa e impedir a investigação. As pistas levam Edward e seus amigos a procurar os objetos roubados e a descobrir como reuni-los: a espada com uma bolsa, o relógio com uma caixa de joias e o cristal com uma bainha.
 
-Ao explorar túneis e outros locais misteriosos, Edward aciona sem querer um mecanismo que liberta criaturas sobrenaturais. Entre perseguições e sustos, ele descobre registros sobre a vida de Romenís Harow: antes conhecido como Peter Norywood, ele foi um educador que acabou envolvido em antigas maldições. A história das relíquias está ligada à tentativa de libertar sua alma, mas a reunião dos objetos também pode desencadear novas assombrações.
+Um túnel ligado à casa de Edward esconde uma caixa e uma mensagem em latim. Ao ler as palavras indicadas, Edward liberta criaturas da Vila Oblitus, que passam a assombrar a casa. Peter o ajuda a enfrentar os monstros, mas deixa escapar que também é um fantasma. Mais tarde, um espectro orienta Edward a procurar informações na biblioteca.
 
-A investigação se torna pessoal quando Edward encontra sinais de que o espírito está se aproximando dele. Uma descoberta sobre o passado de Peter e a origem das maldições muda o sentido da missão: já não é claro quem está sendo perseguido, quem está ajudando e quem pretende usar o poder das relíquias. Edward precisa pensar com cuidado, em vez de simplesmente seguir as instruções que recebe.
+Nos livros da biblioteca, Edward descobre que Peter Norywood era conhecido como Romenís Harow. Peter foi um educador que construiu escolas e uma biblioteca, mas ficou preso a uma maldição relacionada às relíquias. O Rapper pertence ao grupo que quer manter a maldição ativa. Edward também descobre que Alcides é pai de Peter.
 
-No desfecho, Edward usa astúcia e uma encenação de vulnerabilidade para frustrar os planos de uma força que quer prolongar as assombrações. A solução rompe o ciclo de ameaças e liberta os espíritos, encerrando a aventura sem que Edward receba a recompensa prometida.
+Outras aparições sobrenaturais tentam roubar as relíquias, inclusive uma cabeça de palhaço que dá vida a objetos. Edward escapa dos perseguidores e encontra registros sobre a vida de Romenís em televisões abandonadas. Depois, localiza o cadáver de Romenís e um bilhete que revela a combinação correta dos pares. Quando tenta reuni-los, sente que o espírito se aproxima e que talvez esteja sendo conduzido a libertá-lo.
+
+Edward descobre que Thanatos II está por trás da tentativa de prolongar as assombrações. Em vez de enfrentá-lo pela força, Edward finge ser indefeso durante um acampamento na montanha. O plano faz o fantasma desistir de recrutá-lo; Hideous então liberta os espíritos, encerrando o ciclo. Edward salva a si mesmo e aos amigos, mas não recebe a recompensa que lhe haviam prometido.
 
 ## Elementos centrais
 
@@ -22,5 +24,3 @@ No desfecho, Edward usa astúcia e uma encenação de vulnerabilidade para frust
 - **Clima:** aventura juvenil de mistério e terror leve, com humor, enigmas, lugares abandonados e aparições sobrenaturais.
 - **Estrutura:** uma sequência de pistas conduz a revelações graduais; detalhes que pareciam desconexos ganham novo significado perto do final.
 - **Ideia para inspiração:** explorar a dúvida entre libertar alguém e desencadear um novo perigo, além de como inteligência e cooperação podem superar a força.
-
-Este resumo serve como referência temática. Para criar histórias novas, use os temas e o clima como inspiração, sem reproduzir personagens, cenas ou acontecimentos do livro.

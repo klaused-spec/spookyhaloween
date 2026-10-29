@@ -74,8 +74,10 @@ function showListeningStatus() {
 }
 
 function getStoryExcerpt(text, storyTurn) {
-  const start = storyTurn * STORY_EXCERPT_LENGTH;
-  if (start >= text.length) return "";
+  if (text.length <= STORY_EXCERPT_LENGTH) return text;
+
+  const excerptCount = Math.ceil(text.length / STORY_EXCERPT_LENGTH);
+  const start = (storyTurn % excerptCount) * STORY_EXCERPT_LENGTH;
 
   let excerptStart = start;
   if (excerptStart > 0) {
@@ -440,13 +442,13 @@ async function requestReply({ text, idle = false }) {
     messages.push({ role: "user", content: text });
     addMessage("user", text);
   }
-  const storySource = storyInput.value.trim();
-  const storyEnabled = storySource.length > 0;
   isWaitingForReply = true;
   setStatus(idle ? "A Sentinela está chamando a festa…" : "A Sentinela está pensando…");
 
   try {
     await defaultStoryPromise;
+    const storySource = storyInput.value.trim();
+    const storyEnabled = storySource.length > 0;
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -457,6 +459,7 @@ async function requestReply({ text, idle = false }) {
         storyEnabled,
         storyText: idle && storyEnabled ? getStoryExcerpt(storySource, storyTurnCount) : "",
         storyNotes: storyNotes.slice(-8),
+        storyBeatIndex: storyTurnCount,
       }),
     });
     const result = await response.json();
