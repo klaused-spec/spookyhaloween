@@ -19,9 +19,9 @@ const MAX_STORY_FILE_SIZE = 2_000_000;
 const STORY_EXCERPT_LENGTH = 4_500;
 const DEFAULT_STORY_FILE_NAME = "Resumo do livro (incluído no app)";
 const characters = {
-  luana: { name: "LUANA · A FANTASMA", pitch: 0.72 },
-  caio: { name: "CAIO · O VAMPIRO", pitch: 0.55 },
-  pedro: { name: "PEDRO · O ZELADOR", pitch: 0.9 },
+  luana: { name: "LUANA · A FANTASMA", pitch: 0.62 },
+  caio: { name: "CAIO · O VAMPIRO", pitch: 0.45 },
+  pedro: { name: "PEDRO · O ZELADOR", pitch: 0.8 },
 };
 const messages = [];
 let assistantTurnCount = 0;

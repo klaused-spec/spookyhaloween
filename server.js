@@ -11,7 +11,7 @@ const characters = [
     name: "LUANA · A FANTASMA",
     voice: "pt-BR-Luana:MAI-Voice-2.1-Flash",
     style: "whispering",
-    pitch: "-8%",
+    pitch: "-13%",
     personality: "fantasma anfitriã, curiosa e brincalhona, que conhece os segredos da casa",
   },
   {
@@ -19,7 +19,7 @@ const characters = [
     name: "CAIO · O VAMPIRO",
     voice: "pt-BR-Caio:MAI-Voice-2.1-Flash",
     style: "fearful",
-    pitch: "-12%",
+    pitch: "-17%",
     personality: "vampiro dramático e um pouco medroso, que tenta parecer corajoso",
   },
   {
@@ -27,7 +27,7 @@ const characters = [
     name: "PEDRO · O ZELADOR",
     voice: "pt-BR-Pedro:MAI-Voice-2.1-Flash",
     style: "softvoice",
-    pitch: "-5%",
+    pitch: "-10%",
     personality: "zelador misterioso da mansão, observador e dono de humor seco",
   },
 ];
