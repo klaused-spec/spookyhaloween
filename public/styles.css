@@ -208,6 +208,26 @@ h1 > span {
   font-size: 9px;
 }
 
+.clear-memory-button {
+  margin-top: 9px;
+  padding: 6px 9px;
+  border: 1px solid rgb(230 155 75 / 25%);
+  border-radius: 5px;
+  background: transparent;
+  color: #dfab72;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.clear-memory-button:hover:not(:disabled) {
+  background: rgb(230 155 75 / 10%);
+}
+
+.clear-memory-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .conversation {
   display: grid;
   gap: 12px;
