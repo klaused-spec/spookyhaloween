@@ -11,7 +11,7 @@ Uma turma de personagens assustadores para festas de Halloween, feita para funci
 
 ## Configuração
 
-1. Copie `.env.example` para `.env` e preencha os dados do Azure OpenAI e Azure Speech. Os prompts, contextos, personalidades, perguntas de ociosidade e respostas de fallback também ficam no `.env` e podem ser editados ali, sem alterar o código. O app usa três vozes expressivas brasileiras, configuradas por personagem no servidor, e a região do seu recurso Speech, como `swedencentral`, em `AZURE_SPEECH_REGION`.
+1. Copie `.env.example` para `.env` e preencha os dados do Azure OpenAI e Azure Speech. Os prompts, contextos, personalidades, perguntas de ociosidade, respostas de fallback e ajustes de voz ficam no `.env` e podem ser editados ali, sem alterar o código. Os valores iniciais de pitch e velocidade são um teste mais grave e lento; reinicie o servidor para aplicá-los. A região do recurso Speech, como `swedencentral`, fica em `AZURE_SPEECH_REGION`.
 2. Instale as dependências do app:
 
    ```powershell

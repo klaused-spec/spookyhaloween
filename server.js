@@ -8,6 +8,32 @@ const MAX_REPLY_LENGTH = Number(process.env.HALLOWEEN_MAX_REPLY_LENGTH || 100);
 if (!Number.isSafeInteger(MAX_REPLY_LENGTH) || MAX_REPLY_LENGTH < 20) {
   throw new Error("HALLOWEEN_MAX_REPLY_LENGTH deve ser um número inteiro de pelo menos 20.");
 }
+function parseSpeechPercent(name, fallback, min, max) {
+  const value = process.env[name]?.trim() || fallback;
+  const match = value.match(/^(-?\d+(?:\.\d+)?)%$/);
+  const numericValue = match ? Number(match[1]) : NaN;
+  if (!Number.isFinite(numericValue) || numericValue < min || numericValue > max) {
+    throw new Error(`${name} deve ser uma porcentagem entre ${min}% e ${max}%.`);
+  }
+  return `${numericValue}%`;
+}
+
+function parseSpeechStyleDegree() {
+  const value = Number(process.env.HALLOWEEN_SPEECH_STYLE_DEGREE || 1.3);
+  if (!Number.isFinite(value) || value < 0.01 || value > 2) {
+    throw new Error("HALLOWEEN_SPEECH_STYLE_DEGREE deve ficar entre 0.01 e 2.");
+  }
+  return value;
+}
+
+const speechStyle = process.env.HALLOWEEN_SPEECH_STYLE?.trim() || "whispering";
+const speechRate = parseSpeechPercent("HALLOWEEN_SPEECH_RATE", "-15%", -50, 100);
+const speechStyleDegree = parseSpeechStyleDegree();
+const characterPitches = {
+  luana: parseSpeechPercent("HALLOWEEN_LUANA_PITCH", "-20%", -50, 50),
+  caio: parseSpeechPercent("HALLOWEEN_CAIO_PITCH", "-24%", -50, 50),
+  pedro: parseSpeechPercent("HALLOWEEN_PEDRO_PITCH", "-17%", -50, 50),
+};
 const promptEnvironmentKeys = [
   "HALLOWEEN_LUANA_CONTEXT",
   "HALLOWEEN_CAIO_CONTEXT",
@@ -50,24 +76,24 @@ const characters = [
     id: "luana",
     name: "LUANA · A FANTASMA",
     voice: "pt-BR-Luana:MAI-Voice-2.1-Flash",
-    style: "whispering",
-    pitch: "-13%",
+    style: speechStyle,
+    pitch: characterPitches.luana,
     personality: promptConfig.HALLOWEEN_LUANA_CONTEXT,
   },
   {
     id: "caio",
     name: "CAIO · O VAMPIRO",
     voice: "pt-BR-Caio:MAI-Voice-2.1-Flash",
-    style: "whispering",
-    pitch: "-17%",
+    style: speechStyle,
+    pitch: characterPitches.caio,
     personality: promptConfig.HALLOWEEN_CAIO_CONTEXT,
   },
   {
     id: "pedro",
     name: "PEDRO · O ZELADOR",
     voice: "pt-BR-AntonioNeural",
-    style: "whispering",
-    pitch: "-10%",
+    style: speechStyle,
+    pitch: characterPitches.pedro,
     personality: promptConfig.HALLOWEEN_PEDRO_CONTEXT,
   },
 ];
@@ -231,7 +257,7 @@ async function handleSpeech(request, response) {
     }
 
     speechSegments.push(
-      `<voice name="${character.voice}"><mstts:express-as style="${character.style}" styledegree="1.2"><prosody rate="-10%" pitch="${character.pitch}">${escapeXml(line.text.trim())}</prosody></mstts:express-as></voice>`,
+      `<voice name="${escapeXml(character.voice)}"><mstts:express-as style="${escapeXml(character.style)}" styledegree="${speechStyleDegree}"><prosody rate="${speechRate}" pitch="${character.pitch}">${escapeXml(line.text.trim())}</prosody></mstts:express-as></voice>`,
     );
   }
 
