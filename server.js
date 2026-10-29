@@ -41,6 +41,15 @@ const idleQuestions = [
   "Uuuuuh... de que veio fantasiado?",
   "Tem coragem de ouvir minha risada? Hehehe...",
 ];
+const stopWords = new Set([
+  "a", "agora", "ai", "ainda", "algo", "as", "assim", "ate", "bem", "com",
+  "como", "da", "das", "de", "depois", "do", "dos", "e", "ela", "ele", "em",
+  "entao", "essa", "esse", "esta", "estava", "eu", "foi", "me", "mas", "na",
+  "nao", "nem", "no", "nos", "o", "os", "ou", "para", "pela", "pelo", "por",
+  "porque", "que", "se", "sem", "ser", "ta", "tambem", "tem", "tenho", "um",
+  "uma", "voce", "voces", "vou", "estou", "estamos", "era", "gosto", "gostei",
+  "adoro", "acho", "fazer", "tinha", "tive", "veio", "vim", "usando",
+]);
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -84,6 +93,59 @@ function escapeXml(text) {
     };
     return entities[character];
   });
+}
+
+function getMeaningfulWords(text) {
+  const normalized = text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return (normalized.match(/[\p{L}]+/gu) || [])
+    .filter((word) => word.length > 2 && !stopWords.has(word));
+}
+
+function getGuestReplyFallback(text) {
+  const normalized = text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (normalized.includes("autoconhecimento")) {
+    return "Só estou tentando conversar. Qual frase te incomodou?";
+  }
+  if (/\b(demonio|diabo)\b/.test(normalized) && /\bcasa\b/.test(normalized)) {
+    return "Essa ideia parece assustadora. O que aconteceu em casa?";
+  }
+
+  const nameMatch = normalized.match(/\b(?:meu nome e|me chamo)\s+([\p{L}]+)/u);
+  if (nameMatch && /\bbruxa\b/i.test(normalized)) {
+    const name = nameMatch[1].charAt(0).toLocaleUpperCase("pt-BR") + nameMatch[1].slice(1);
+    return `Prazer, ${name}! O que mais gosta na fantasia?`;
+  }
+  if (/\bfantasia\b/.test(normalized) && /\bpirata\b/.test(normalized)) {
+    return "Fantasia de pirata? Qual parte você mais gosta?";
+  }
+  if (/\bfilmes?\b/.test(normalized) && /\bterror\b/.test(normalized)) {
+    return "Filmes de terror? Qual deles mais te assusta?";
+  }
+  if (/\bamigas?\b/.test(normalized)) {
+    return "Você veio com suas amigas? O que elas acharam da festa?";
+  }
+  if (nameMatch) {
+    const name = nameMatch[1].charAt(0).toLocaleUpperCase("pt-BR") + nameMatch[1].slice(1);
+    return `Prazer, ${name}! O que te trouxe à festa?`;
+  }
+
+  const words = normalized.match(/[\p{L}]+/gu) || [];
+  const contentWords = getMeaningfulWords(text);
+  if (
+    contentWords.length <= 1 ||
+    (words.length >= 7 && contentWords.length / words.length <= 0.2)
+  ) {
+    return "Não entendi direito. Pode repetir de outro jeito?";
+  }
+
+  return null;
 }
 
 async function handleSpeech(request, response) {
@@ -308,17 +370,20 @@ async function handleChat(request, response) {
           {
             role: "system",
             content: [
-              "Você interpreta um personagem assustador de uma festa de Halloween e fala diretamente com os convidados. Responda em português brasileiro, com pouquíssimas palavras: uma fala curta, de preferência entre 3 e 10 palavras, nunca acima de 100 caracteres.",
+              "Você interpreta um personagem assustador de uma festa de Halloween e fala diretamente com os convidados. Responda em português brasileiro, com uma fala natural e curta, nunca acima de 100 caracteres.",
               ...characters.map(
                 (character) => `${character.name}: ${character.personality}.`,
               ),
-              `Nesta rodada, ${speaker.name} fala sozinho. Nunca interprete outro personagem nem crie diálogo entre os moradores. Fale só com o público e responda ao que a pessoa acabou de dizer. Se ainda não souber o nome, pergunte; depois use o nome e faça uma pergunta curta de continuação.`,
-              "Seja assustador, brincalhão e insistente de um jeito divertido. Pergunte coisas como o nome da pessoa, por que veio à festa, a fantasia ou se já provou asas de barata crocantes. Faça apenas uma pergunta por fala. Não faça monólogos, poesia, narração, exposição de histórias ou perguntas abstratas. Varie as perguntas e não repita a mesma frase em turnos próximos.",
-              "De vez em quando, use uma risadinha maligna ou um susto vocal bem curto, como 'Hehehe...' ou 'Aaaah...!', nunca em toda fala. Tudo é dito em sussurro; não escreva instruções de palco nem grite de verdade. Mantenha o terror brincalhão, sem ameaças reais, humilhação ou violência.",
+              `Nesta rodada, ${speaker.name} fala sozinho. Nunca interprete outro personagem nem crie diálogo entre os moradores. A última fala do convidado é o assunto principal: responda a ela, não recite uma frase pronta de personagem.`,
+              "Sua fala tem duas partes obrigatórias: uma reação curta que responda ao que a pessoa disse e uma única pergunta de continuação diretamente sobre o mesmo assunto. Se a pessoa fez uma pergunta, responda-a na reação. Não mude de assunto.",
+              "Se a transcrição estiver truncada ou sem sentido, não tente adivinhar nem invente medo ou segredo: a reação deve dizer que não entendeu e a pergunta deve pedir para repetir. Se a pessoa já disse o nome, lembre-se dele e não pergunte de novo. Se ela não quiser conversar, respeite.",
+              "Use linguagem cotidiana. Nunca use frases vagas ou filosóficas como 'quem teme o que não conhece?', 'conheço seu medo' e 'qual sua verdadeira face?'. Não faça monólogos, poesia ou narração. Não diga que vê a pessoa ou conhece seus segredos.",
+              "Exemplos obrigatórios do formato e do comportamento: para 'Você está usando essas frases para autoconhecimento?', responda reaction='Autoconhecimento? Só estou tentando conversar.' e question='Qual frase te incomodou?'. Para 'É pronto.', use reaction='Não entendi o que quis dizer com pronto.' e question='Pode explicar?'. Para 'O demônio está dentro da minha casa.', use reaction='Essa ideia parece assustadora.' e question='O que aconteceu em casa?'. Para 'Meu nome é Ana e estou fantasiada de bruxa.', use reaction='Prazer, Ana! Bruxa, que legal.' e question='Qual parte da fantasia você mais gosta?'.",
+              "O susto está no sussurro e na personalidade: use de vez em quando uma risada curta como 'Hehehe...', mas não em toda fala. Mantenha a brincadeira de Halloween, sem ameaças reais ou humilhação.",
               isIdlePrompt
-                ? `Ninguém respondeu há 15 segundos. Chame a atenção com uma pergunta direta e curta. Faça a pergunta sugerida, ou uma variação natural: ${idleQuestion} Se ainda não responderem, volte a tentar após a próxima pausa, mudando o assunto.`
-                : "Converse como anfitrião assustador: reaja à resposta da pessoa, demonstre curiosidade e faça uma pergunta curta para manter o papo. Não pressione se ela disser que não quer conversar.",
-              `Retorne somente JSON válido no formato {"lines":[{"text":"fala curta"}]}. Produza exatamente uma fala para ${speaker.name}, com até ${MAX_REPLY_LENGTH} caracteres.`,
+                ? `Ninguém respondeu há 15 segundos. Inicie conversa com uma pergunta direta e curta, sem narração: ${idleQuestion}`
+                : "Responda especificamente à última fala do convidado. Não use uma pergunta pronta de início de conversa se a pessoa já está conversando.",
+              `Retorne somente JSON válido no formato {"reaction":"resposta direta","question":"pergunta relacionada"}. ${speaker.name} diz uma reação e uma pergunta, juntas com até ${MAX_REPLY_LENGTH} caracteres.`,
             ].join(" "),
           },
           ...messages,
@@ -333,7 +398,7 @@ async function handleChat(request, response) {
         ],
         response_format: { type: "json_object" },
         max_tokens: 120,
-        temperature: 0.85,
+        temperature: 0.2,
       }),
       signal: AbortSignal.timeout(30_000),
     });
@@ -377,21 +442,42 @@ async function handleChat(request, response) {
     return;
   }
 
-  const lines = parsedAnswer.lines;
-  const validLines = Array.isArray(lines) &&
-    lines.length === 1 &&
-    lines.every(
-      (line) =>
-        line &&
-        typeof line.text === "string" &&
-        line.text.trim().length > 0 &&
-        line.text.trim().length <= MAX_REPLY_LENGTH,
-    );
-  if (!validLines) {
-    const invalidLineLengths = Array.isArray(lines)
-      ? lines.map((line) => (typeof line?.text === "string" ? line.text.trim().length : "invalid"))
-      : "not-an-array";
-    console.error("A resposta do personagem tinha formato ou tamanho inválido:", invalidLineLengths);
+  const reaction = parsedAnswer.reaction;
+  const question = parsedAnswer.question;
+  const structuredReply = typeof reaction === "string" && typeof question === "string"
+    ? `${reaction.trim()} ${question.trim()}`.trim()
+    : "";
+  const lineReply = Array.isArray(parsedAnswer.lines) && parsedAnswer.lines.length === 1 &&
+      typeof parsedAnswer.lines[0]?.text === "string"
+    ? parsedAnswer.lines[0].text.trim()
+    : "";
+  const candidateReply = structuredReply || lineReply;
+  const normalizedReply = candidateReply
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const replyWords = new Set(getMeaningfulWords(candidateReply));
+  const hasTopicOverlap = isIdlePrompt || getMeaningfulWords(lastMessage.content)
+    .some((word) => replyWords.has(word));
+  const questionMarks = candidateReply.match(/\?/g) || [];
+  const hasNaturalFollowUp = candidateReply.trim().endsWith("?") &&
+    questionMarks.length === 1;
+  const hasGenericCatchphrase =
+    /quem teme o que nao conhece|conheco seu medo|qual sua verdadeira face|medo revela quem voce e|quer que eu te ajude|quer que eu investigue|voar por aqui|presenca/.test(normalizedReply);
+  const acceptedReply = candidateReply.length <= MAX_REPLY_LENGTH &&
+    hasNaturalFollowUp &&
+    hasTopicOverlap &&
+    !hasGenericCatchphrase;
+  const reply = isIdlePrompt
+    ? acceptedReply ? candidateReply : idleQuestion
+    : acceptedReply
+      ? candidateReply
+      : getGuestReplyFallback(lastMessage.content) || "Não entendi bem isso. Pode me contar mais?";
+  if (!acceptedReply) {
+    console.warn("A resposta gerada não foi suficientemente relacionada; usei uma pergunta de continuação.");
+  }
+  if (!reply || reply.length > MAX_REPLY_LENGTH) {
+    console.error("A resposta do personagem não passou na validação de relevância e tamanho.");
     sendJson(response, 502, { error: "A resposta dos personagens não seguiu a ordem esperada." });
     return;
   }
@@ -399,7 +485,7 @@ async function handleChat(request, response) {
   sendJson(response, 200, {
     lines: [{
       characterId: speaker.id,
-      text: lines[0].text.trim(),
+      text: reply,
     }],
   });
 }
