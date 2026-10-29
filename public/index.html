@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#100d18" />
+    <meta
+      name="description"
+      content="Uma anfitriã misteriosa para conversar na sua festa de Halloween."
+    />
+    <title>A Sentinela — Halloween</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="A Sentinela, início">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <span>A SENTINELA</span>
+        </a>
+        <span class="edition">EDIÇÃO DE HALLOWEEN</span>
+      </header>
+
+      <section class="scene" aria-labelledby="title">
+        <div class="moon" aria-hidden="true"></div>
+        <div class="bats" aria-hidden="true">✧　·　✦</div>
+        <div class="lantern" aria-hidden="true"><span>✦</span></div>
+        <div class="intro">
+          <p class="eyebrow"><span class="status-dot"></span> UMA PRESENÇA NA ESCURIDÃO</p>
+          <h1 id="title">A casa estava<br />à sua espera<span>.</span></h1>
+          <p class="subtitle">
+            Eu sou a Sentinela. Chegue mais perto, conte seu nome… se tiver coragem.
+          </p>
+        </div>
+        <div class="conversation" aria-live="polite" aria-relevant="additions text">
+          <div class="message assistant-message" id="welcome-message">
+            <span class="message-label">A SENTINELA</span>
+            <p>Entre, viajante. Que nome devo sussurrar pelas paredes desta casa?</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Controles da conversa">
+        <div class="status-line" id="status-line" role="status" aria-live="polite">
+          <span class="status-indicator"></span>
+          <span id="status-text">Pronta para despertar</span>
+        </div>
+        <button class="talk-button" id="talk-button" type="button">
+          <span class="button-icon" aria-hidden="true">◉</span>
+          <span id="button-label">Começar a conversa</span>
+        </button>
+        <button class="text-toggle" id="text-toggle" type="button">
+          Prefere digitar? <span>Enviar uma mensagem</span>
+        </button>
+        <form class="text-form" id="text-form" hidden>
+          <label class="sr-only" for="text-input">Sua mensagem</label>
+          <input
+            id="text-input"
+            name="message"
+            maxlength="500"
+            placeholder="Sussurre uma mensagem..."
+            autocomplete="off"
+          />
+          <button type="submit" aria-label="Enviar mensagem">↗</button>
+        </form>
+        <p class="privacy-note">
+          <span aria-hidden="true">✧</span> O microfone só fica ativo enquanto a sessão estiver ligada.
+          Toque novamente para encerrar.
+        </p>
+        <details class="microphone-help">
+          <summary>Como liberar o microfone?</summary>
+          <div class="help-content">
+            <p><strong>Computador (Chrome):</strong> abra <strong>http://localhost:3000</strong> no mesmo computador em que o app está rodando e clique em <strong>Começar a conversa</strong>. Quando o Chrome perguntar, escolha <strong>Permitir</strong>. Se já estiver bloqueado, clique no ícone à esquerda do endereço → <strong>Configurações do site</strong> → <strong>Microfone</strong> → <strong>Permitir</strong>, depois recarregue a página.</p>
+            <p>Também é possível abrir <strong>chrome://settings/content/microphone</strong>, habilitar sites a pedir acesso e conferir se o microfone correto está selecionado.</p>
+            <p><strong>Android (Chrome):</strong> toque em <strong>Permitir</strong> quando o navegador pedir. Se você já bloqueou, toque no ícone ao lado do endereço do site, abra <strong>Permissões</strong> e permita o microfone.</p>
+            <p><strong>iPhone (Safari):</strong> abra <strong>Ajustes → Apps → Safari → Microfone</strong> e escolha <strong>Permitir</strong> ou <strong>Perguntar</strong>. Depois, volte ao site e autorize quando solicitado.</p>
+            <p>No celular, o site precisa estar aberto em um endereço seguro que começa com <strong>https://</strong>. Um endereço local como <strong>http://192.168.x.x:3000</strong> não libera o microfone. Se a opção não aparecer, recarregue a página e toque em <strong>Começar a conversa</strong> novamente.</p>
+          </div>
+        </details>
+      </section>
+
+      <footer>
+        <span>UMA VOZ ENTRE OS MUNDOS</span>
+        <span>FEITO PARA A NOITE DE 31 DE OUTUBRO</span>
+      </footer>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

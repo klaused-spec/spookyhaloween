@@ -1,0 +1,12 @@
+{
+  "name": "vigia-do-halloween",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Companheiro de voz assustador para festas de Halloween",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
