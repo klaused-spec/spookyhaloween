@@ -58,6 +58,35 @@
         <button class="text-toggle" id="text-toggle" type="button">
           Prefere digitar? <span>Enviar uma mensagem</span>
         </button>
+        <details class="story-settings">
+          <summary>Adicionar texto de inspiração (opcional)</summary>
+          <div class="story-content">
+            <label for="story-input">Cole o texto ou carregue um livro em .txt ou .md</label>
+            <div class="story-file-control">
+              <input
+                class="sr-only"
+                id="story-file"
+                type="file"
+                accept=".txt,.md,text/plain,text/markdown"
+              />
+              <label class="story-file-button" for="story-file">Escolher arquivo</label>
+              <span id="story-file-name">Nenhum arquivo escolhido</span>
+            </div>
+            <textarea
+              id="story-input"
+              maxlength="500000"
+              rows="5"
+              placeholder="Cole aqui o texto que vai inspirar a história da festa..."
+            ></textarea>
+            <div class="story-footer">
+              <span id="story-status" role="status">Os personagens contam pistas originais do livro quando houver 15 segundos de silêncio.</span>
+              <span id="story-count">0 / 500.000</span>
+            </div>
+            <p class="story-privacy">
+              O livro fica apenas nesta página; pequenos trechos são enviados à Azure nos momentos de história. O app não salva o arquivo.
+            </p>
+          </div>
+        </details>
         <form class="text-form" id="text-form" hidden>
           <label class="sr-only" for="text-input">Sua mensagem</label>
           <input
