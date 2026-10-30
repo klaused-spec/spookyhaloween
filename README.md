@@ -28,7 +28,7 @@ Uma anfitriã de Halloween com três personagens: Luana, a fantasma; Caio, o vam
 
 ## Publicação em subcaminho
 
-`APP_BASE_PATH` permite servir esta versão em um caminho como `/versao3`. Configure essa variável no ambiente do processo Node.js e encaminhe tanto as requisições da página quanto `/api/*` e `/vendor/*` para o mesmo processo. Deixe vazia para servir na raiz do domínio.
+O exemplo configura `APP_BASE_PATH=/versao3` para servir esta versão em um caminho dedicado. Encaminhe tanto as requisições da página quanto `/api/*` e `/vendor/*` para o mesmo processo Node.js. Deixe vazia para servir na raiz do domínio.
 
 No Hostinger, a implantação Node.js de uma branch substitui o conteúdo da aplicação associada ao site. Não implante outra branch sobre a aplicação de produção para tentar criar uma segunda versão. Para manter `main`, `versao1`, `versao2` e `versao3` simultaneamente no mesmo domínio, cada processo precisa de uma implantação independente e o servidor web precisa encaminhar cada subcaminho ao processo correspondente; confirme no hPanel se seu plano permite essa configuração antes de publicar. A aplicação atual do domínio está configurada como Node.js na raiz.
 
