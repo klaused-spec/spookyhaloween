@@ -35,6 +35,6 @@ O reconhecimento de fala usa a Azure Speech em modo contínuo: depois da permiss
 
 ## Publicação em subcaminho
 
-Configure `APP_BASE_PATH=/versao1` para servir esta versão em um subcaminho. Deixe a variável vazia para servir na raiz do domínio. O servidor e os arquivos do navegador usam o prefixo para as páginas, recursos estáticos e rotas de API.
+O exemplo configura `APP_BASE_PATH=/versao1` para servir esta versão em um subcaminho. Deixe a variável vazia para servir na raiz do domínio. O servidor e os arquivos do navegador usam o prefixo para as páginas, recursos estáticos e rotas de API.
 
 Um subcaminho exige que o servidor web encaminhe as requisições para o processo Node.js correto. Na hospedagem atual, o Hostinger usa uma aplicação Node.js do Passenger montada em `/`; implantar outra branch no mesmo site substitui a aplicação existente. Configure o roteamento no Hostinger antes de tentar servir várias branches no mesmo domínio.
