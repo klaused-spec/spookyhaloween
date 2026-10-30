@@ -75,6 +75,30 @@ button {
   color: #817a89;
 }
 
+.version-nav {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 0 0;
+  overflow-x: auto;
+}
+
+.version-nav a {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 999px;
+  color: #aaa1ad;
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.version-nav a[aria-current="page"] {
+  border-color: rgb(230 155 75 / 40%);
+  color: #f0c48d;
+  background: rgb(230 155 75 / 8%);
+}
+
 .scene {
   position: relative;
   flex: 1;
@@ -123,6 +147,7 @@ button {
 
 .intro,
 .guest-memory,
+.character-cast,
 .conversation {
   position: relative;
   z-index: 1;
@@ -165,7 +190,7 @@ h1 {
   line-height: 1.05;
 }
 
-h1 > span {
+h1 .heading-accent {
   color: var(--orange);
 }
 
@@ -183,6 +208,28 @@ h1 > span {
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 8px;
   background: rgb(29 24 39 / 70%);
+}
+
+.character-cast {
+  margin-top: 22px;
+  padding: 12px 14px;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 8px;
+  background: rgb(29 24 39 / 70%);
+}
+
+.character-cast[hidden] {
+  display: none;
+}
+
+.character-cast ul {
+  display: grid;
+  gap: 5px;
+  margin: 8px 0 0;
+  padding-left: 17px;
+  color: #e4dce4;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .memory-title {

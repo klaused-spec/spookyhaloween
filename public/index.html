@@ -9,8 +9,8 @@
       content="Uma anfitriã misteriosa para conversar na sua festa de Halloween."
     />
     <title>A Sentinela — Halloween</title>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="app">
@@ -21,19 +21,25 @@
         </a>
         <span class="edition">EDIÇÃO DE HALLOWEEN</span>
       </header>
+      <nav class="version-nav" aria-label="Versões do aplicativo">
+        <a href="/">Principal</a>
+        <a href="/versao1/">Versão 1</a>
+        <a href="/versao2/">Versão 2</a>
+        <a href="/versao3/">Versão 3</a>
+      </nav>
 
       <section class="scene" aria-labelledby="title">
         <div class="moon" aria-hidden="true"></div>
         <div class="bats" aria-hidden="true">✧　·　✦</div>
         <div class="lantern" aria-hidden="true"><span>✦</span></div>
         <div class="intro">
-          <p class="eyebrow"><span class="status-dot"></span> UM SUSSURRO NA ESCURIDÃO</p>
-          <h1 id="title">Chegue mais<br />perto<span>…</span></h1>
-          <p class="subtitle">
+          <p class="eyebrow"><span class="status-dot"></span> <span id="version-eyebrow">UM SUSSURRO NA ESCURIDÃO</span></p>
+          <h1 id="title"><span id="heading-line-one">Chegue mais</span><br /><span class="heading-accent" id="heading-line-two">perto…</span></h1>
+          <p class="subtitle" id="version-subtitle">
             Luana quer saber seu nome, sua comida favorita de Halloween e sua brincadeira favorita.
           </p>
         </div>
-        <aside class="guest-memory" aria-label="Anotações desta sessão">
+        <aside class="guest-memory" id="guest-memory-panel" aria-label="Anotações desta sessão">
           <span class="memory-title">ANOTAÇÕES DA NOITE</span>
           <ul id="guest-memory-list">
             <li>Carregando anotações salvas…</li>
@@ -43,10 +49,14 @@
             Apagar anotações salvas
           </button>
         </aside>
+        <aside class="character-cast" id="character-cast-panel" aria-label="Personagens da mansão" hidden>
+          <span class="memory-title">QUEM ESTÁ À ESPREITA</span>
+          <ul id="character-cast-list"></ul>
+        </aside>
         <div class="conversation" aria-live="polite" aria-relevant="additions text">
           <div class="message assistant-message" id="welcome-message">
-            <span class="message-label">LUANA · SUSSURRO</span>
-            <p>Shhh... ei, você aí! Chega mais perto... qual é seu nome? Qual sua comida favorita de Halloween?</p>
+            <span class="message-label" id="welcome-label">LUANA · SUSSURRO</span>
+            <p id="welcome-text">Shhh... ei, você aí! Chega mais perto... qual é seu nome? Qual sua comida favorita de Halloween?</p>
           </div>
         </div>
       </section>
@@ -76,7 +86,7 @@
         </form>
         <p class="privacy-note">
           <span aria-hidden="true">✧</span> O microfone só fica ativo enquanto a sessão estiver ligada.
-          Nomes e gostos ficam salvos no servidor até serem apagados e são enviados à Azure OpenAI como contexto.
+          <span id="privacy-note-text">Nomes e gostos ficam salvos no servidor até serem apagados e são enviados à Azure OpenAI como contexto.</span>
         </p>
         <details class="microphone-help">
           <summary>Como liberar o microfone?</summary>
@@ -95,7 +105,7 @@
         <span>FEITO PARA A NOITE DE 31 DE OUTUBRO</span>
       </footer>
     </main>
-    <script src="/vendor/speech-sdk.js" defer></script>
-    <script src="/app.js" defer></script>
+    <script src="./vendor/speech-sdk.js" defer></script>
+    <script src="./app.js" defer></script>
   </body>
 </html>
