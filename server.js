@@ -4,6 +4,10 @@ const path = require("node:path");
 
 const publicDirectory = path.join(__dirname, "public");
 const port = Number(process.env.PORT || 3000);
+const appBasePath = process.env.APP_BASE_PATH?.trim().replace(/\/+$/, "") || "";
+if (appBasePath && !/^\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(appBasePath)) {
+  throw new Error("APP_BASE_PATH deve ser um caminho como /versao1 ou ficar vazio.");
+}
 const MAX_REPLY_LENGTH = 100;
 const characters = [
   {
@@ -406,6 +410,19 @@ async function handleChat(request, response) {
 
 const server = http.createServer(async (request, response) => {
   const requestUrl = new URL(request.url, `http://${request.headers.host || "localhost"}`);
+  if (appBasePath) {
+    if (requestUrl.pathname === appBasePath) {
+      response.writeHead(308, { Location: `${appBasePath}/${requestUrl.search}` });
+      response.end();
+      return;
+    }
+    if (!requestUrl.pathname.startsWith(`${appBasePath}/`)) {
+      sendJson(response, 404, { error: "Rota não encontrada." });
+      return;
+    }
+    requestUrl.pathname = requestUrl.pathname.slice(appBasePath.length);
+  }
+
   if (requestUrl.pathname === "/api/chat" && request.method === "POST") {
     await handleChat(request, response);
     return;

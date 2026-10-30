@@ -61,7 +61,7 @@ function showListeningStatus() {
 }
 
 async function fetchSpeechAuthorization() {
-  const response = await fetch("/api/speech/token", { method: "POST" });
+  const response = await fetch("./api/speech/token", { method: "POST" });
   const result = await response.json();
   if (!response.ok) {
     throw new Error(result.error || "Não consegui iniciar a escuta do Azure Speech.");
@@ -370,7 +370,7 @@ async function speak(lines) {
   try {
     const audioSegments = await Promise.all(
       lines.map(async (line) => {
-        const response = await fetch("/api/speech", {
+        const response = await fetch("./api/speech", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ lines: [line] }),
@@ -413,7 +413,7 @@ async function requestReply({ text, idle = false }) {
   setStatus(idle ? "A Sentinela está chamando a festa…" : "A Sentinela está pensando…");
 
   try {
-    const response = await fetch("/api/chat", {
+    const response = await fetch("./api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
