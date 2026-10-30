@@ -1,34 +1,35 @@
-# A Sentinela — versão simples
+# A Sentinela — versão 3
 
-Uma personagem sussurrante para festas de Halloween, feita para funcionar no navegador de um celular. Luana chama os convidados, descobre seus nomes, suas comidas favoritas de Halloween e suas brincadeiras preferidas, e usa essas anotações como memória nas próximas conversas.
+Uma anfitriã de Halloween com três personagens: Luana, a fantasma; Caio, o vampiro; e Pedro, o zelador. Eles conversam com os convidados, perguntam seus nomes e, quando alguém se apresenta, podem usar o nome numa micro-história fictícia de susto com humor. As pegadinhas são leves: sem ameaças, violência gráfica, gritos ou sons repentinos e altos.
 
 ## Requisitos
 
 - Node.js 18 ou superior.
 - Um recurso Azure OpenAI com um deployment de modelo de chat.
 - Um recurso Azure Speech com chave e região para a voz neural.
-- Um navegador com suporte a microfone e conexão HTTPS (ou `localhost`). O reconhecimento contínuo de fala usa o recurso Azure Speech; o modo de texto também está disponível.
+- Navegador com suporte a microfone e conexão HTTPS (ou `localhost`). Também existe modo de texto.
 
 ## Configuração
 
-1. Copie `.env.example` para `.env` e preencha os dados do Azure OpenAI e Azure Speech. A missão da personagem e os ajustes simples de voz também ficam no `.env`; reinicie o servidor depois de editá-los.
-2. Instale as dependências do app:
+1. Copie `.env.example` para `.env` e preencha as credenciais do Azure OpenAI e Azure Speech. O estilo da conversa fica em `HALLOWEEN_PROMPT`; ajuste de voz por personagem pode ser feito em `AZURE_SPEECH_VOICE_LUANA`, `AZURE_SPEECH_VOICE_CAIO` e `AZURE_SPEECH_VOICE_PEDRO`.
+2. Instale as dependências:
 
    ```powershell
    npm install
    ```
 
-3. No PowerShell, inicie o aplicativo com o script:
+3. Inicie o servidor:
 
    ```powershell
    .\iniciar.ps1
    ```
 
-   O servidor carrega as variáveis do `.env` sem exibir seus valores; o script também faz essa leitura antes de iniciar. Isso permite iniciar pelo script ou com `npm start`. Para encerrar, pressione `Ctrl+C`.
+   Ou use `npm start`. Abra `http://localhost:3000` e permita o microfone. Em celular, o app precisa estar servido por HTTPS.
 
-4. Abra `http://localhost:3000` no computador em que o servidor está rodando e toque em **Começar a conversa**. O Chrome considera `localhost` um endereço seguro e deve pedir acesso ao microfone. Se o acesso estiver bloqueado, abra `chrome://settings/content/microphone`, permita que os sites solicitem acesso e confira se o microfone correto está selecionado; depois, volte ao app e recarregue a página.
-5. Para usar em outro celular, hospede o servidor em um endereço acessível ao aparelho com HTTPS. No celular, abra esse endereço no navegador e toque em **Começar a conversa**; quando surgir o pedido de acesso ao microfone, escolha **Permitir**. Em Android/Chrome, se o acesso já foi bloqueado, toque no ícone à esquerda do endereço do site → **Permissões** → **Microfone** → **Permitir**. No iPhone, abra **Ajustes → Apps → Safari → Microfone** e selecione **Permitir** ou **Perguntar**; volte ao site e autorize quando solicitado. Os nomes dos menus podem variar conforme a versão do sistema. O próprio app também mostra estas instruções na opção **Como liberar o microfone?**.
+## Publicação em subcaminho
 
-Luana é a única personagem e fala em sussurros curtos. Ela insiste com gentileza para descobrir o nome, a comida favorita de Halloween e a brincadeira favorita de cada convidado; de vez em quando, faz um susto brincalhão. Quando ninguém fala por 15 segundos, ela chama outra pessoa ou pergunta o que ainda falta saber. As anotações são salvas em `data/guest-memory.json` no servidor, permanecem após reiniciar o app e são carregadas como contexto nas conversas seguintes. Use **Apagar anotações salvas** para removê-las. O arquivo não entra no Git; em hospedagens que apagam arquivos durante um novo deploy, faça backup ou configure `HALLOWEEN_MEMORY_FILE` para um volume persistente. Como qualquer pessoa com acesso ao app pode ver ou apagar a memória, use-o apenas em um ambiente confiável. Nomes e gostos salvos também são enviados à Azure OpenAI como contexto. A voz neural usa os ajustes de pitch, velocidade e sussurro definidos no `.env`.
+`APP_BASE_PATH` permite servir esta versão em um caminho como `/versao3`. Configure essa variável no ambiente do processo Node.js e encaminhe tanto as requisições da página quanto `/api/*` e `/vendor/*` para o mesmo processo. Deixe vazia para servir na raiz do domínio.
 
-O reconhecimento de fala usa a Azure Speech em modo contínuo: depois da permissão inicial, mantém uma sessão de microfone aberta durante a conversa. O servidor entrega ao navegador apenas um token temporário de reconhecimento; a chave Speech permanece no servidor e o token é renovado durante sessões longas. Se a geração de áudio falhar, o app tenta usar a voz do navegador. O `.env` contém credenciais: não o envie ao controle de versão nem compartilhe. O áudio vai para Azure Speech; a transcrição, a conversa e as anotações salvas vão para Azure OpenAI.
+No Hostinger, a implantação Node.js de uma branch substitui o conteúdo da aplicação associada ao site. Não implante outra branch sobre a aplicação de produção para tentar criar uma segunda versão. Para manter `main`, `versao1`, `versao2` e `versao3` simultaneamente no mesmo domínio, cada processo precisa de uma implantação independente e o servidor web precisa encaminhar cada subcaminho ao processo correspondente; confirme no hPanel se seu plano permite essa configuração antes de publicar. A aplicação atual do domínio está configurada como Node.js na raiz.
+
+O nome e as falas ficam apenas no histórico da sessão no navegador e são enviados à Azure OpenAI para gerar respostas; não são gravados numa memória persistente pelo app. O áudio vai para Azure Speech. O `.env` contém credenciais: não o envie ao Git nem compartilhe.

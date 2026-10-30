@@ -9,13 +9,13 @@
       content="Uma anfitriã misteriosa para conversar na sua festa de Halloween."
     />
     <title>A Sentinela — Halloween</title>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="app">
       <header class="topbar">
-        <a class="brand" href="/" aria-label="A Sentinela, início">
+        <a class="brand" href="./" aria-label="A Sentinela, início">
           <span class="brand-mark" aria-hidden="true">✦</span>
           <span>A SENTINELA</span>
         </a>
@@ -27,26 +27,25 @@
         <div class="bats" aria-hidden="true">✧　·　✦</div>
         <div class="lantern" aria-hidden="true"><span>✦</span></div>
         <div class="intro">
-          <p class="eyebrow"><span class="status-dot"></span> UM SUSSURRO NA ESCURIDÃO</p>
+          <p class="eyebrow"><span class="status-dot"></span> TRÊS PRESENÇAS NA ESCURIDÃO</p>
           <h1 id="title">Chegue mais<br />perto<span>…</span></h1>
           <p class="subtitle">
-            Luana quer saber seu nome, sua comida favorita de Halloween e sua brincadeira favorita.
+            Diga seu nome. Os moradores da casa têm uma história de arrepiar — e uma pegadinha para você.
           </p>
         </div>
-        <aside class="guest-memory" aria-label="Anotações desta sessão">
-          <span class="memory-title">ANOTAÇÕES DA NOITE</span>
-          <ul id="guest-memory-list">
-            <li>Carregando anotações salvas…</li>
+        <aside class="cast" aria-label="Moradores da casa">
+          <span class="cast-title">QUEM ESTÁ À ESPREITA</span>
+          <ul>
+            <li><strong>Luana</strong> · a fantasma que sussurra</li>
+            <li><strong>Caio</strong> · o vampiro brincalhão</li>
+            <li><strong>Pedro</strong> · o zelador rabugento</li>
           </ul>
-          <p>Salvas no servidor e usadas como contexto pela Azure OpenAI.</p>
-          <button class="clear-memory-button" id="clear-memory-button" type="button" disabled>
-            Apagar anotações salvas
-          </button>
+          <p>Todos escutam a resposta e entram na conversa quando fizer sentido.</p>
         </aside>
         <div class="conversation" aria-live="polite" aria-relevant="additions text">
           <div class="message assistant-message" id="welcome-message">
-            <span class="message-label">LUANA · SUSSURRO</span>
-            <p>Shhh... ei, você aí! Chega mais perto... qual é seu nome? Qual sua comida favorita de Halloween?</p>
+            <span class="message-label">LUANA · A FANTASMA</span>
+            <p>Shhh... você aí, chega mais perto. Como é que os vivos chamam você?</p>
           </div>
         </div>
       </section>
@@ -76,7 +75,7 @@
         </form>
         <p class="privacy-note">
           <span aria-hidden="true">✧</span> O microfone só fica ativo enquanto a sessão estiver ligada.
-          Nomes e gostos ficam salvos no servidor até serem apagados e são enviados à Azure OpenAI como contexto.
+          Sua voz é transcrita e enviada à Azure OpenAI para a conversa; o app não mantém uma lista permanente de nomes.
         </p>
         <details class="microphone-help">
           <summary>Como liberar o microfone?</summary>
@@ -95,7 +94,7 @@
         <span>FEITO PARA A NOITE DE 31 DE OUTUBRO</span>
       </footer>
     </main>
-    <script src="/vendor/speech-sdk.js" defer></script>
-    <script src="/app.js" defer></script>
+    <script src="./vendor/speech-sdk.js" defer></script>
+    <script src="./app.js" defer></script>
   </body>
 </html>

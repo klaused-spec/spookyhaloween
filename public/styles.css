@@ -122,7 +122,7 @@ button {
 }
 
 .intro,
-.guest-memory,
+.cast,
 .conversation {
   position: relative;
   z-index: 1;
@@ -177,7 +177,7 @@ h1 > span {
   line-height: 1.7;
 }
 
-.guest-memory {
+.cast {
   margin-top: 22px;
   padding: 12px 14px;
   border: 1px solid rgb(255 255 255 / 8%);
@@ -185,14 +185,14 @@ h1 > span {
   background: rgb(29 24 39 / 70%);
 }
 
-.memory-title {
+.cast-title {
   color: #d6a4df;
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.15em;
 }
 
-.guest-memory ul {
+.cast ul {
   display: grid;
   gap: 5px;
   margin: 8px 0 0;
@@ -202,30 +202,14 @@ h1 > span {
   line-height: 1.5;
 }
 
-.guest-memory p {
+.cast li strong {
+  color: #e5ba7b;
+}
+
+.cast p {
   margin: 8px 0 0;
   color: #817a89;
   font-size: 9px;
-}
-
-.clear-memory-button {
-  margin-top: 9px;
-  padding: 6px 9px;
-  border: 1px solid rgb(230 155 75 / 25%);
-  border-radius: 5px;
-  background: transparent;
-  color: #dfab72;
-  cursor: pointer;
-  font-size: 10px;
-}
-
-.clear-memory-button:hover:not(:disabled) {
-  background: rgb(230 155 75 / 10%);
-}
-
-.clear-memory-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
 }
 
 .conversation {
@@ -266,6 +250,22 @@ h1 > span {
 
 .character-luana .message-label {
   color: #d6a4df;
+}
+
+.character-caio {
+  border-left: 2px solid #a3545c;
+}
+
+.character-caio .message-label {
+  color: #e18b82;
+}
+
+.character-pedro {
+  border-left: 2px solid #8e9b91;
+}
+
+.character-pedro .message-label {
+  color: #b7c4b8;
 }
 
 .user-message .message-label {

@@ -3,8 +3,6 @@ const buttonLabel = document.querySelector("#button-label");
 const statusLine = document.querySelector("#status-line");
 const statusText = document.querySelector("#status-text");
 const conversation = document.querySelector(".conversation");
-const guestMemoryList = document.querySelector("#guest-memory-list");
-const clearMemoryButton = document.querySelector("#clear-memory-button");
 const textToggle = document.querySelector("#text-toggle");
 const textForm = document.querySelector("#text-form");
 const textInput = document.querySelector("#text-input");
@@ -12,12 +10,12 @@ const microphoneHelp = document.querySelector(".microphone-help");
 
 const IDLE_TIMEOUT_MS = 15_000;
 const characters = {
-  luana: { name: "LUANA", pitch: 0.62 },
+  luana: { name: "LUANA · A FANTASMA", pitch: 0.62 },
+  caio: { name: "CAIO · O VAMPIRO", pitch: 0.55 },
+  pedro: { name: "PEDRO · O ZELADOR", pitch: 0.72 },
 };
 const messages = [];
-const guestMemory = [];
 let activeGuestName = "";
-let memoryReady = false;
 let recognition;
 let speechConfig;
 let microphoneStream;
@@ -63,7 +61,7 @@ function showListeningStatus() {
 }
 
 async function fetchSpeechAuthorization() {
-  const response = await fetch("/api/speech/token", { method: "POST" });
+  const response = await fetch("./api/speech/token", { method: "POST" });
   const result = await response.json();
   if (!response.ok) {
     throw new Error(result.error || "Não consegui iniciar a escuta do Azure Speech.");
@@ -87,74 +85,6 @@ function addMessage(role, text, characterId) {
   message.append(label, content);
   conversation.append(message);
   conversation.scrollTop = conversation.scrollHeight;
-}
-
-function renderGuestMemory() {
-  guestMemoryList.replaceChildren();
-  for (const savedGuest of guestMemory) {
-    const item = document.createElement("li");
-    const details = [
-      savedGuest.foods.length ? `comida de Halloween: ${savedGuest.foods.join(", ")}` : "",
-      savedGuest.games.length ? `brincadeiras: ${savedGuest.games.join(", ")}` : "",
-    ].filter(Boolean);
-    item.textContent = details.length
-      ? `${savedGuest.name} — ${details.join("; ")}`
-      : savedGuest.name;
-    guestMemoryList.append(item);
-  }
-  if (guestMemory.length === 0) {
-    const item = document.createElement("li");
-    item.textContent = "Ainda não descobri nenhum nome…";
-    guestMemoryList.append(item);
-  }
-  clearMemoryButton.disabled = !memoryReady || guestMemory.length === 0;
-}
-
-function updateGuestMemory(savedMemory, update) {
-  guestMemory.splice(0, guestMemory.length, ...savedMemory);
-  if (typeof update?.name === "string" && update.name.trim()) {
-    activeGuestName = update.name.trim();
-  }
-
-  const activeGuest = guestMemory.find(
-    (guest) => guest.name.toLocaleLowerCase("pt-BR") === activeGuestName.toLocaleLowerCase("pt-BR"),
-  );
-  if (activeGuest?.foods.length && activeGuest.games.length) activeGuestName = "";
-  renderGuestMemory();
-}
-
-async function loadGuestMemory() {
-  const response = await fetch("/api/guest-memory");
-  const result = await response.json();
-  if (!response.ok || !Array.isArray(result.guests)) {
-    throw new Error(result.error || "Não consegui carregar as anotações salvas.");
-  }
-  updateGuestMemory(result.guests);
-  memoryReady = true;
-  renderGuestMemory();
-}
-
-async function clearGuestMemory() {
-  if (!memoryReady || guestMemory.length === 0) return;
-  if (!window.confirm("Apagar permanentemente todas as anotações salvas dos convidados?")) return;
-
-  clearMemoryButton.disabled = true;
-  try {
-    const response = await fetch("/api/guest-memory", { method: "DELETE" });
-    const result = await response.json();
-    if (!response.ok || !Array.isArray(result.guests)) {
-      throw new Error(result.error || "Não consegui apagar as anotações salvas.");
-    }
-    activeGuestName = "";
-    updateGuestMemory(result.guests);
-    messages.length = 0;
-    conversation.querySelectorAll(".message:not(#welcome-message)").forEach((message) => message.remove());
-    setStatus("Anotações salvas apagadas");
-  } catch (error) {
-    console.error("Não consegui apagar as anotações salvas:", error);
-    setStatus(error.message);
-    renderGuestMemory();
-  }
 }
 
 function stopRecognition() {
@@ -442,12 +372,12 @@ async function speak(lines) {
   isSpeaking = true;
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   releaseAudio();
-  setStatus("Luana está preparando a voz…");
+  setStatus("Uma das presenças prepara a voz…");
 
   try {
     const audioSegments = await Promise.all(
       lines.map(async (line) => {
-        const response = await fetch("/api/speech", {
+        const response = await fetch("./api/speech", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ lines: [line] }),
@@ -481,10 +411,6 @@ async function speak(lines) {
 
 async function requestReply({ text, idle = false }) {
   if (isWaitingForReply) return;
-  if (!memoryReady) {
-    setStatus("Não consegui carregar a memória salva. Recarregue o app e tente novamente.");
-    return;
-  }
   clearIdleTimer();
   if (text) {
     messages.push({ role: "user", content: text });
@@ -494,7 +420,7 @@ async function requestReply({ text, idle = false }) {
   setStatus(idle ? "A Sentinela está chamando a festa…" : "A Sentinela está pensando…");
 
   try {
-    const response = await fetch("/api/chat", {
+    const response = await fetch("./api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -507,13 +433,15 @@ async function requestReply({ text, idle = false }) {
     if (!response.ok) {
       throw new Error(result.error || "A conversa não pôde continuar.");
     }
-    if (!Array.isArray(result.guestMemory)) {
-      throw new Error("A resposta do servidor não trouxe a memória salva.");
+    if (!Array.isArray(result.lines) || result.lines.length === 0) {
+      throw new Error("A resposta do servidor não trouxe falas válidas.");
     }
 
-    updateGuestMemory(result.guestMemory, result.guestUpdate);
+    if (typeof result.guestName === "string" && result.guestName.trim()) {
+      activeGuestName = result.guestName.trim();
+    }
     const reply = result.lines
-      .map((line) => `${characters[line.characterId].name}: ${line.text}`)
+      .map((line) => `${characters[line.characterId]?.name || "A SENTINELA"}: ${line.text}`)
       .join("\n");
     messages.push({ role: "assistant", content: reply });
     result.lines.forEach((line) => addMessage("assistant", line.text, line.characterId));
@@ -533,10 +461,6 @@ async function requestReply({ text, idle = false }) {
 }
 
 async function sendMessage(text) {
-  if (!memoryReady) {
-    setStatus("Carregando as anotações salvas…");
-    return;
-  }
   const trimmedText = text.trim();
   if (!trimmedText || isWaitingForReply) return;
   clearIdleTimer();
@@ -565,10 +489,6 @@ function stopSession() {
 }
 
 function startSession() {
-  if (!memoryReady) {
-    setStatus("Carregando as anotações salvas…");
-    return;
-  }
   if (!window.isSecureContext) {
     setStatus("O microfone exige HTTPS no celular. Abra o app por um endereço que comece com https://.");
     microphoneHelp.open = true;
@@ -634,15 +554,6 @@ textForm.addEventListener("submit", (event) => {
   const text = textInput.value;
   textInput.value = "";
   sendMessage(text);
-});
-
-clearMemoryButton.addEventListener("click", clearGuestMemory);
-clearMemoryButton.disabled = true;
-loadGuestMemory().then(() => {
-  setStatus("Pronta para despertar");
-}).catch((error) => {
-  console.error("Não consegui carregar as anotações salvas:", error);
-  setStatus(error.message);
 });
 
 if (!window.SpeechSDK) {
