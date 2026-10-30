@@ -63,7 +63,7 @@ function showListeningStatus() {
 }
 
 async function fetchSpeechAuthorization() {
-  const response = await fetch("/api/speech/token", { method: "POST" });
+  const response = await fetch("./api/speech/token", { method: "POST" });
   const result = await response.json();
   if (!response.ok) {
     throw new Error(result.error || "Não consegui iniciar a escuta do Azure Speech.");
@@ -124,7 +124,7 @@ function updateGuestMemory(savedMemory, update) {
 }
 
 async function loadGuestMemory() {
-  const response = await fetch("/api/guest-memory");
+  const response = await fetch("./api/guest-memory");
   const result = await response.json();
   if (!response.ok || !Array.isArray(result.guests)) {
     throw new Error(result.error || "Não consegui carregar as anotações salvas.");
@@ -140,7 +140,7 @@ async function clearGuestMemory() {
 
   clearMemoryButton.disabled = true;
   try {
-    const response = await fetch("/api/guest-memory", { method: "DELETE" });
+    const response = await fetch("./api/guest-memory", { method: "DELETE" });
     const result = await response.json();
     if (!response.ok || !Array.isArray(result.guests)) {
       throw new Error(result.error || "Não consegui apagar as anotações salvas.");
@@ -447,7 +447,7 @@ async function speak(lines) {
   try {
     const audioSegments = await Promise.all(
       lines.map(async (line) => {
-        const response = await fetch("/api/speech", {
+        const response = await fetch("./api/speech", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ lines: [line] }),
@@ -494,7 +494,7 @@ async function requestReply({ text, idle = false }) {
   setStatus(idle ? "A Sentinela está chamando a festa…" : "A Sentinela está pensando…");
 
   try {
-    const response = await fetch("/api/chat", {
+    const response = await fetch("./api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

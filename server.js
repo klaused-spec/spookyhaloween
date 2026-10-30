@@ -38,6 +38,10 @@ loadEnvironmentFile();
 
 const publicDirectory = path.join(__dirname, "public");
 const port = Number(process.env.PORT || 3000);
+const appBasePath = process.env.APP_BASE_PATH?.trim().replace(/\/+$/, "") || "";
+if (appBasePath && !/^\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(appBasePath)) {
+  throw new Error("APP_BASE_PATH deve ser um caminho como /versao2 ou ficar vazio.");
+}
 function parseSpeechPercent(name, fallback, min, max) {
   const value = process.env[name]?.trim() || fallback;
   const match = value.match(/^(-?\d+(?:\.\d+)?)%$/);
@@ -567,6 +571,19 @@ async function handleChat(request, response) {
 
 const server = http.createServer(async (request, response) => {
   const requestUrl = new URL(request.url, `http://${request.headers.host || "localhost"}`);
+  if (appBasePath) {
+    if (requestUrl.pathname === appBasePath) {
+      response.writeHead(308, { Location: `${appBasePath}/${requestUrl.search}` });
+      response.end();
+      return;
+    }
+    if (!requestUrl.pathname.startsWith(`${appBasePath}/`)) {
+      sendJson(response, 404, { error: "Rota não encontrada." });
+      return;
+    }
+    requestUrl.pathname = requestUrl.pathname.slice(appBasePath.length);
+  }
+
   if (requestUrl.pathname === "/api/guest-memory") {
     await handleGuestMemory(request, response);
     return;
