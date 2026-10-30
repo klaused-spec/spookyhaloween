@@ -28,6 +28,20 @@ body {
     #100d18;
 }
 
+body::before {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  background-color: transparent;
+  content: "";
+  pointer-events: none;
+  transition: background-color 400ms ease;
+}
+
+html.is-speaking-flash body::before {
+  animation: pumpkin-lights 4.8s ease-in-out infinite;
+}
+
 button,
 input {
   font: inherit;
@@ -38,6 +52,8 @@ button {
 }
 
 .app {
+  position: relative;
+  z-index: 1;
   width: min(100% - 40px, 660px);
   min-height: 100vh;
   min-height: 100dvh;
@@ -390,6 +406,36 @@ h1 .heading-accent {
   color: #fff3e7;
 }
 
+.flash-toggle {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 9px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 6px;
+  background: rgb(42 32 48 / 88%);
+  color: #f0c48d;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.flash-toggle[aria-pressed="true"] {
+  border-color: #ff8a2a;
+  background: linear-gradient(110deg, #632b67, #874119);
+  color: #fff4d6;
+}
+
+.flash-safety-note {
+  margin: 7px 0 0;
+  color: #aaa1ad;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .button-icon {
   font-size: 17px;
 }
@@ -524,6 +570,21 @@ footer {
   }
 }
 
+@keyframes pumpkin-lights {
+  0%,
+  100% {
+    background-color: rgb(255 55 0 / 48%);
+  }
+
+  33% {
+    background-color: rgb(220 0 255 / 48%);
+  }
+
+  66% {
+    background-color: rgb(0 255 105 / 42%);
+  }
+}
+
 @keyframes appear {
   from {
     opacity: 0;
@@ -557,5 +618,10 @@ footer {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
+  }
+
+  html.is-speaking-flash body::before {
+    animation: none !important;
+    background-color: rgb(255 116 0 / 22%);
   }
 }

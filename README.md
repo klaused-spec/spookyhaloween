@@ -8,6 +8,8 @@ Um único servidor e uma única aplicação oferecem três experiências por rot
 
 Use os links no topo da página para alternar entre as versões. Não é preciso criar aplicações, subdomínios ou processos Node.js separados.
 
+O botão **Ativar luzes da abóbora** habilita cores fortes e lentas na tela enquanto a voz toca. O efeito começa desligado e, em aparelhos configurados para movimento reduzido, vira uma iluminação estática. Evite ativá-lo se luzes piscantes incomodam você.
+
 ## Requisitos
 
 - Node.js 18 ou superior.

@@ -19,6 +19,8 @@ const versionLinks = document.querySelectorAll(".version-nav a");
 const textToggle = document.querySelector("#text-toggle");
 const textForm = document.querySelector("#text-form");
 const textInput = document.querySelector("#text-input");
+const flashToggle = document.querySelector("#flash-toggle");
+const flashToggleLabel = document.querySelector("#flash-toggle-label");
 const microphoneHelp = document.querySelector(".microphone-help");
 
 const IDLE_TIMEOUT_MS = 15_000;
@@ -34,6 +36,8 @@ let microphoneStream;
 let sessionActive = false;
 let sessionGeneration = 0;
 let isSpeaking = false;
+let isSpeechPlaying = false;
+let flashEnabled = false;
 let isWaitingForReply = false;
 let idleTimer;
 let recognitionRetryTimer;
@@ -47,6 +51,26 @@ let speechRequestId = 0;
 function setStatus(text, active = false) {
   statusText.textContent = text;
   statusLine.classList.toggle("is-active", active);
+}
+
+function setSpeechPlaying(active) {
+  isSpeechPlaying = active;
+  document.documentElement.classList.toggle(
+    "is-speaking-flash",
+    flashEnabled && isSpeechPlaying,
+  );
+}
+
+function setFlashEnabled(enabled) {
+  flashEnabled = enabled;
+  flashToggle.setAttribute("aria-pressed", String(enabled));
+  flashToggleLabel.textContent = enabled
+    ? "Desativar luzes da abóbora"
+    : "Ativar luzes da abóbora";
+  document.documentElement.classList.toggle(
+    "is-speaking-flash",
+    flashEnabled && isSpeechPlaying,
+  );
 }
 
 function clearIdleTimer() {
@@ -424,13 +448,16 @@ function speakWithBrowser(lines, requestId) {
     return utterance;
   });
   const finishFallback = () => {
+    setSpeechPlaying(false);
     isSpeaking = false;
     showListeningStatus();
     scheduleIdlePrompt();
   };
   utterances.forEach((utterance, index) => {
+    utterance.onstart = () => setSpeechPlaying(true);
     if (index === utterances.length - 1) utterance.onend = finishFallback;
     utterance.onerror = (event) => {
+      setSpeechPlaying(false);
       console.error("A fala não pôde ser reproduzida:", event.error);
       if (index === utterances.length - 1) {
         setStatus("Não consegui reproduzir a voz. Confira o áudio do celular.");
@@ -463,7 +490,7 @@ function releaseAudio() {
   }
 }
 
-function playAudio(audio, requestId) {
+function playAudio(audio, requestId, isLastSegment) {
   if (requestId !== speechRequestId || !sessionActive) return Promise.resolve();
 
   audioObjectUrl = URL.createObjectURL(audio);
@@ -473,9 +500,11 @@ function playAudio(audio, requestId) {
 
   return new Promise((resolve, reject) => {
     let settled = false;
-    const finish = (error) => {
+    const finish = (error, stopVisual = true) => {
       if (settled) return;
       settled = true;
+      if (stopVisual) setSpeechPlaying(false);
+      activeAudio.onplay = null;
       activeAudio.onended = null;
       activeAudio.onerror = null;
       activeAudio.pause();
@@ -491,9 +520,10 @@ function playAudio(audio, requestId) {
     const cancelPlayback = () => finish();
 
     finishCurrentAudio = cancelPlayback;
-    activeAudio.onended = () => finish();
+    activeAudio.onplay = () => setSpeechPlaying(true);
+    activeAudio.onended = () => finish(undefined, isLastSegment);
     activeAudio.onerror = () => finish(new Error("O áudio não pôde ser reproduzido."));
-    activeAudio.play().catch(finish);
+    activeAudio.play().catch((error) => finish(error));
   });
 }
 
@@ -524,7 +554,7 @@ async function speak(lines) {
     for (let index = 0; index < audioSegments.length; index++) {
       if (requestId !== speechRequestId || !sessionActive) return;
       setStatus(`${characters[lines[index].characterId].name.split(" · ")[0]} sussurra…`);
-      await playAudio(audioSegments[index], requestId);
+      await playAudio(audioSegments[index], requestId, index === audioSegments.length - 1);
     }
 
     if (requestId !== speechRequestId || !sessionActive) return;
@@ -625,6 +655,7 @@ function stopSession() {
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   releaseAudio();
   isSpeaking = false;
+  setSpeechPlaying(false);
   setStatus("Sessão encerrada");
 }
 
@@ -702,6 +733,7 @@ textForm.addEventListener("submit", (event) => {
 
 clearMemoryButton.addEventListener("click", clearGuestMemory);
 clearMemoryButton.disabled = true;
+flashToggle.addEventListener("click", () => setFlashEnabled(!flashEnabled));
 async function initializeApp() {
   await loadAppConfig();
   if (appConfig.kind === "memory") await loadGuestMemory();
